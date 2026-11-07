@@ -19,10 +19,12 @@ pub struct Span {
     pub col: u32,
 }
 
-/// A suggested repair.
+/// A suggested repair. `commands`, if any, are Model API edits that apply it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Fix {
     pub message: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub commands: Vec<crate::api::Command>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -80,6 +82,7 @@ impl Diagnostic {
     pub fn fix(mut self, message: impl Into<String>) -> Self {
         self.fix = Some(Fix {
             message: message.into(),
+            commands: vec![],
         });
         self
     }

@@ -22,3 +22,6 @@ unsafe_code = "forbid"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
+# Diagnostic is ~250 bytes. Errors are rare and not on hot paths, so boxing it
+# everywhere would add noise for no gain.
+result_large_err = "allow"

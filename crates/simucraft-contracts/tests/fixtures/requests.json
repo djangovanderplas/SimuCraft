@@ -1,0 +1,396 @@
+[
+ {
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "project.create",
+  "params": {
+   "path": "motor_demo",
+   "name": "motor_demo"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "project.open",
+  "params": {
+   "path": "examples/motor_demo"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "project.save",
+  "params": {}
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "project.status",
+  "params": {}
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "project.trust",
+  "params": {
+   "path": "examples/motor_demo",
+   "trusted": true
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "block.add",
+  "params": {
+   "model": "models/speed_control.scmodel",
+   "type": "core.Gain",
+   "name": "ff",
+   "params": {
+    "k": 0.05
+   },
+   "inputs": {
+    "u": "speed_ref.y"
+   },
+   "dry_run": true
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "block.remove",
+  "params": {
+   "target": "ff"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 8,
+  "method": "block.rename",
+  "params": {
+   "target": "b_5c2d9tz6hyaw",
+   "name": "pi_speed"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 9,
+  "method": "block.set_params",
+  "params": {
+   "target": "pi",
+   "params": {
+    "P": "Kp * 1.2",
+    "D": null
+   }
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 10,
+  "method": "connect",
+  "params": {
+   "source": "pi.y",
+   "destination": "supply.v"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 11,
+  "method": "disconnect",
+  "params": {
+   "destination": "supply.v"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 12,
+  "method": "net.connect",
+  "params": {
+   "ports": [
+    "motor.shaft",
+    "speed_sensor.flange"
+   ]
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 13,
+  "method": "net.disconnect",
+  "params": {
+   "ports": [
+    "motor.shaft"
+   ]
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 14,
+  "method": "port.add",
+  "params": {
+   "model": "models/speed_control.scmodel",
+   "kind": "inport",
+   "name": "load_torque",
+   "dtype": "f64",
+   "unit": "N*m",
+   "domain": null
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 15,
+  "method": "port.remove",
+  "params": {
+   "target": "load_torque"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 16,
+  "method": "param.set",
+  "params": {
+   "model": "models/speed_control.scmodel",
+   "name": "Kp",
+   "value": 0.9,
+   "expr": null,
+   "file": null,
+   "unit": "V*s/rad",
+   "tunable": true,
+   "uncertain": null
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 17,
+  "method": "param.remove",
+  "params": {
+   "model": "models/speed_control.scmodel",
+   "name": "Kp"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 18,
+  "method": "signal.set",
+  "params": {
+   "port": "pi.y",
+   "name": "voltage_cmd",
+   "log": true,
+   "analysis_point": true,
+   "trace": null
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 19,
+  "method": "subsystem.create",
+  "params": {
+   "blocks": [
+    "error",
+    "pi"
+   ],
+   "name": "controller",
+   "file": "models/subsystems/controller.scmodel"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 20,
+  "method": "subsystem.expand",
+  "params": {
+   "target": "controller"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 21,
+  "method": "layout.set",
+  "params": {
+   "target": "pi",
+   "at": [
+    200.0,
+    80.0
+   ],
+   "size": null,
+   "orient": "right"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 22,
+  "method": "annotation.add",
+  "params": {
+   "model": "models/speed_control.scmodel",
+   "text": "Speed loop",
+   "at": [
+    120.0,
+    20.0
+   ]
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 23,
+  "method": "tx.begin",
+  "params": {
+   "label": "Add feedforward"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 24,
+  "method": "tx.commit",
+  "params": {}
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 25,
+  "method": "tx.rollback",
+  "params": {}
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 26,
+  "method": "undo",
+  "params": {}
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 27,
+  "method": "redo",
+  "params": {}
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 28,
+  "method": "model.get",
+  "params": {
+   "path": "models/speed_control.scmodel",
+   "depth": 1
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 29,
+  "method": "find",
+  "params": {
+   "query": "type:core.PID"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 30,
+  "method": "library.list",
+  "params": {
+   "filter": "core."
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 31,
+  "method": "library.describe",
+  "params": {
+   "type_name": "core.PID"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 32,
+  "method": "compile",
+  "params": {
+   "model": "models/speed_control.scmodel"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 33,
+  "method": "simulate",
+  "params": {
+   "model": "models/speed_control.scmodel",
+   "overrides": {
+    "Kp": 1.0
+   },
+   "stop_time": 2.0,
+   "signals": [
+    "speed"
+   ]
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 34,
+  "method": "run.stop",
+  "params": {
+   "run": "r_01"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 35,
+  "method": "signal.get",
+  "params": {
+   "run": "r_01",
+   "signal": "speed",
+   "mode": "summary"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 36,
+  "method": "experiment.run",
+  "params": {
+   "file": "experiments/motor_robustness.scexp",
+   "spec": null
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 37,
+  "method": "experiment.status",
+  "params": {
+   "experiment": "e_01"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 38,
+  "method": "experiment.results",
+  "params": {
+   "experiment": "e_01"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 39,
+  "method": "experiment.replay",
+  "params": {
+   "experiment": "e_01",
+   "run": 412
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 40,
+  "method": "diff",
+  "params": {
+   "from": "HEAD",
+   "to": "worktree"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 41,
+  "method": "merge",
+  "params": {
+   "base": "base.scmodel",
+   "ours": "ours.scmodel",
+   "theirs": "theirs.scmodel"
+  }
+ },
+ {
+  "jsonrpc": "2.0",
+  "id": 42,
+  "method": "design.validate",
+  "params": {
+   "file": "design/speed_loop.scdesign"
+  }
+ }
+]

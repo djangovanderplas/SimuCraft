@@ -1,0 +1,15 @@
+# Throwaway spike for ADR 0001 (solver backend). Not part of the workspace.
+[package]
+name = "solver-backends-spike"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+diffsol = "0.18"
+sundials-sys = { version = "0.6", optional = true, default-features = false, features = ["cvode", "build_libraries", "static_libraries"] }
+
+[features]
+sundials = ["dep:sundials-sys"]
