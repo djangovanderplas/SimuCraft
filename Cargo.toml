@@ -12,6 +12,7 @@ repository = "https://github.com/djangovanderplas/SimuCraft"
 [workspace.dependencies]
 simucraft-contracts = { path = "crates/simucraft-contracts" }
 simucraft-format = { path = "crates/simucraft-format" }
+simucraft-runtime = { path = "crates/simucraft-runtime" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml_edit = "0.25"
