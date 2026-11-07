@@ -1,0 +1,15 @@
+{
+  "extraKnownMarketplaces": {
+    "karpathy-skills": { "source": { "source": "github", "repo": "forrestchang/andrej-karpathy-skills" } },
+    "asd-ste100-skill": { "source": { "source": "github", "repo": "danyuchn/asd-ste100-skill" } },
+    "i-have-adhd": { "source": { "source": "github", "repo": "ayghri/i-have-adhd" } },
+    "ponytail": { "source": { "source": "github", "repo": "DietrichGebert/ponytail" } }
+  },
+  "enabledPlugins": {
+    "andrej-karpathy-skills@karpathy-skills": true,
+    "asd-ste100@asd-ste100-skill": true,
+    "i-have-adhd@i-have-adhd": true,
+    "mattpocock-skills@claude-plugins-official": true,
+    "ponytail@ponytail": true
+  }
+}
