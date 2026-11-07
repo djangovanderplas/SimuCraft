@@ -219,6 +219,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "simucraft-expr"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "simucraft-contracts",
+ "simucraft-format",
+ "toml_edit",
+]
+
+[[package]]
 name = "simucraft-format"
 version = "0.0.1"
 dependencies = [
