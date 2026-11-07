@@ -187,7 +187,11 @@ pub fn library() -> Vec<Box<dyn BlockType>> {
             "A model input. The runtime writes its value; in a subsystem the compiler replaces it.",
             &[],
             &["y"],
-            &[("width", "1", "Number of elements")],
+            &[
+                ("width", "1", "Number of elements"),
+                ("dtype", "f64", "Signal type"),
+                ("unit", "", "UCUM unit; empty means unspecified"),
+            ],
             |p, w| {
                 let width = p.num("width")?;
                 if width < 1.0 || width.fract() != 0.0 {
