@@ -14,8 +14,26 @@ fn check_file(path: &str) -> PyResult<String> {
     Ok(serde_json::to_string(&diagnostics).expect("diagnostics serialize"))
 }
 
+/// An in-process model service. `handle` takes and returns one JSON-RPC message as text.
+#[pyclass]
+struct Service(simucraft_service::Service);
+
+#[pymethods]
+impl Service {
+    #[new]
+    fn new() -> Self {
+        Self(Default::default())
+    }
+
+    /// Run one JSON-RPC request and return the response.
+    fn handle(&mut self, request: &str) -> String {
+        self.0.handle_json(request)
+    }
+}
+
 #[pymodule]
 fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    m.add_class::<Service>()?;
     m.add_function(wrap_pyfunction!(check_file, m)?)
 }

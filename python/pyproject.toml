@@ -11,6 +11,9 @@ requires-python = ">=3.11"
 dynamic = ["version"]
 classifiers = ["Programming Language :: Rust", "Programming Language :: Python :: 3"]
 
+[project.scripts]
+simucraft = "simucraft.cli:main"
+
 [dependency-groups]
 dev = ["pytest>=8"]
 

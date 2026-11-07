@@ -1,0 +1,17 @@
+[package]
+name = "simucraft-service"
+description = "SimuCraft model service: Model API commands over a project's files."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+simucraft-contracts.workspace = true
+simucraft-format.workspace = true
+serde_json.workspace = true
+toml_edit = { workspace = true, features = ["serde"] }
+
+[lints]
+workspace = true
