@@ -1,0 +1,20 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "simucraft"
+description = "Open-source block-diagram modeling and simulation."
+readme = "../README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+dynamic = ["version"]
+classifiers = ["Programming Language :: Rust", "Programming Language :: Python :: 3"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.maturin]
+module-name = "simucraft._native"
+python-source = "."
+features = ["pyo3/extension-module"]

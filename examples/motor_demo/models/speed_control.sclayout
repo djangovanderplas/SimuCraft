@@ -1,0 +1,17 @@
+format = "simucraft.layout/0.1"
+model = "speed_control.scmodel"
+
+[blocks.b_4a10f3k8m2qx]
+at = [140, 80]
+size = [30, 30]
+orient = "right"
+
+[wires."b_5c2d9tz6hyaw.u"]       # a signal wire, keyed by its destination
+points = [[200, 95], [240, 95]]
+
+[nets.n_9c1d0x9g3krz]
+points = [[410, 160], [460, 160]]
+
+[annotations.a_19bc02f5n8jh]
+text = "Speed loop, 1 kHz"
+at = [120, 20]

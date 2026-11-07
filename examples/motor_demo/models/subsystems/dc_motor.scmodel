@@ -1,0 +1,99 @@
+format = "simucraft.model/0.1"
+id = "m_0ys6q0h1jd98"
+name = "dc_motor"
+doc = "Armature circuit and rotor of a permanent-magnet DC motor"
+
+[parameters.R]
+value = 1.2
+unit = "Ohm"
+
+[parameters.L]
+value = 0.005
+unit = "H"
+
+[parameters.k]
+value = 0.05
+unit = "N*m/A"
+
+[parameters.J]
+value = 0.0001
+unit = "kg*m2"
+
+[parameters.J_load]
+value = 0.012
+unit = "kg*m2"
+
+[parameters.friction_scale]
+value = 1.0
+unit = "1"
+
+[blocks.b_3egnpe6fywk6]
+name = "shaft"
+type = "core.Connector"
+
+[blocks.b_3egnpe6fywk6.params]
+domain = "rot"
+
+[blocks.b_6t0eqt79m4nx]
+name = "friction"
+type = "rot.ViscousFriction"
+
+[blocks.b_6t0eqt79m4nx.params]
+d = "1e-4[N*m*s/rad] * friction_scale"
+
+[blocks.b_7r9vszkkjx7v]
+name = "emf"
+type = "elec.RotationalEMF"
+
+[blocks.b_7r9vszkkjx7v.params]
+k = "k"
+
+[blocks.b_k4gxahnan2ed]
+name = "inertia"
+type = "rot.Inertia"
+
+[blocks.b_k4gxahnan2ed.params]
+J = "J + J_load"
+
+[blocks.b_mm9rdp3pcrzt]
+name = "resistor"
+type = "elec.Resistor"
+
+[blocks.b_mm9rdp3pcrzt.params]
+R = "R"
+
+[blocks.b_xszyyps6xmsj]
+name = "p"
+type = "core.Connector"
+
+[blocks.b_xszyyps6xmsj.params]
+domain = "elec"
+
+[blocks.b_y2s8232akar6]
+name = "n"
+type = "core.Connector"
+
+[blocks.b_y2s8232akar6.params]
+domain = "elec"
+
+[blocks.b_z47dxe41ttef]
+name = "inductor"
+type = "elec.Inductor"
+
+[blocks.b_z47dxe41ttef.params]
+L = "L"
+
+[nets.n_3nena4e140k1]
+ports = ["b_mm9rdp3pcrzt.p", "b_xszyyps6xmsj.port"]
+
+[nets.n_6qytr9hc63qd]
+ports = ["b_mm9rdp3pcrzt.n", "b_z47dxe41ttef.p"]
+
+[nets.n_bx0nxqqb84n1]
+ports = ["b_7r9vszkkjx7v.p", "b_z47dxe41ttef.n"]
+
+[nets.n_syrqzeadckc8]
+ports = ["b_7r9vszkkjx7v.n", "b_y2s8232akar6.port"]
+
+[nets.n_w6jr59nrfmhv]
+ports = ["b_3egnpe6fywk6.port", "b_6t0eqt79m4nx.flange", "b_7r9vszkkjx7v.flange", "b_k4gxahnan2ed.flange"]

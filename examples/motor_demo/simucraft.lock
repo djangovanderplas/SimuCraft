@@ -1,0 +1,6 @@
+format = "simucraft.lock/0.1"
+# Written by simucraft; do not edit.
+
+[libraries.simucraft-core]
+version = "0.1.0"
+hash = "sha256:0000000000000000000000000000000000000000000000000000000000000000"

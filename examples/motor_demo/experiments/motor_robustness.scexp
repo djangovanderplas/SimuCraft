@@ -1,0 +1,46 @@
+format = "simucraft.experiment/0.1"
+name = "motor_robustness"
+model = "../models/speed_control.scmodel"
+seed = 42
+runs = 1000
+sampling = "monte_carlo"        # grid | monte_carlo | lhs | sobol
+
+[simulation]                    # overrides model settings
+stop_time = 2.0
+
+[inputs.speed_ref]              # drives a model inport by name
+signal = "step"                 # constant | step | ramp | sine | table
+
+[inputs.speed_ref.params]
+time = 0.1
+final = 100.0
+
+[set]                           # fixed overrides, same in every run
+"motor.friction_scale" = 1.1
+
+[vary.R]                        # use the model's own 'uncertain' entry
+from_model = true
+
+[vary."motor.J_load"]
+dist = "uniform"                # normal | uniform | lognormal | choice
+low = 0.008
+high = 0.016
+
+[record]
+signals = ["speed", "voltage_cmd"]
+traces = "failures"             # all | none | failures | sample:50
+decimate = 10
+
+[metrics]                       # computed on the worker, one value per run
+overshoot = "max(speed) / final(speed) - 1"
+settling = "settling_time(speed, tol=0.02)"
+peak_voltage = "max(abs(voltage_cmd))"
+
+[requirements]                  # pass/fail per run
+overshoot_ok = "overshoot < 0.10"
+voltage_ok = "peak_voltage < 24.0[V]"
+uses = ["../design/speed_loop.scdesign#no_saturation"]
+
+[execution]
+executor = "local"              # local in the MVP; dask, ray, slurm in v1
+workers = "auto"

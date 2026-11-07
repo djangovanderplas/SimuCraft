@@ -1,0 +1,114 @@
+format = "simucraft.model/0.1"
+id = "m_4c1e9ah2kq7d"
+name = "speed_control"
+doc = "PI speed control of a DC motor"
+
+[simulation]                    # optional; overrides project defaults
+stop_time = 5.0
+
+# Parameters: value (literal), expr (expression, Section 9) or file (data)
+[parameters.Kp]
+value = 0.8
+unit = "V*s/rad"
+tunable = true                  # design field, see Section 7
+
+[parameters.Ki]
+value = 4.0
+unit = "V/rad"
+tunable = true
+
+[parameters.R]
+value = 1.2
+unit = "Ohm"
+
+[parameters.R.uncertain]        # design field, see Section 7
+dist = "normal"
+std = 0.05
+
+[parameters.friction_map]
+file = "../data/motor.npz"
+key = "friction"
+
+# Model ports are blocks too, so every endpoint is <block>.<port>.
+# New tables go in ID order, which spreads additions through the file.
+[blocks.b_1c2d4r8vn3ex]
+name = "speed_ref"
+type = "core.Inport"
+
+[blocks.b_1c2d4r8vn3ex.params]
+dtype = "f64"
+unit = "rad/s"
+
+[blocks.b_2aa10gk5w2pm]
+name = "speed"
+type = "core.Outport"
+
+[blocks.b_2aa10gk5w2pm.inputs]
+u = "b_e5f20hp8k1wt.y"
+
+# Signal-flow blocks: each input names its one source, one line per input
+[blocks.b_4a10f3k8m2qx]
+name = "error"
+type = "core.Sum"
+
+[blocks.b_4a10f3k8m2qx.params]
+signs = "+-"
+
+[blocks.b_4a10f3k8m2qx.inputs]
+u1 = "b_1c2d4r8vn3ex.y"
+u2 = "b_e5f20hp8k1wt.y"
+
+[blocks.b_5c2d9tz6hyaw]
+name = "pi"
+type = "core.PID"
+ts = 0.001                      # discrete at 1 kHz; omit to inherit
+
+[blocks.b_5c2d9tz6hyaw.params]
+P = "Kp"
+I = "Ki"
+D = 0.0
+
+[blocks.b_5c2d9tz6hyaw.inputs]
+u = "b_4a10f3k8m2qx.y"
+
+# Acausal blocks: physical ports join through nets
+[blocks.b_7d2c4nw7r1fs]
+name = "supply"
+type = "elec.ControlledVoltageSource"   # signal in, physical out
+
+[blocks.b_7d2c4nw7r1fs.inputs]
+v = "b_5c2d9tz6hyaw.y"
+
+[blocks.b_9b18ejx4s9mk]
+name = "motor"
+type = "subsystem"
+ref = "subsystems/dc_motor.scmodel"
+
+[blocks.b_9b18ejx4s9mk.params]
+R = "R"
+
+[blocks.b_cf0f0q3zc6vn]
+name = "ground"
+type = "elec.Ground"
+
+[blocks.b_e5f20hp8k1wt]
+name = "speed_sensor"
+type = "rot.SpeedSensor"               # physical in, signal out
+
+[nets.n_2e60aa7v2d9b]
+ports = ["b_7d2c4nw7r1fs.p", "b_9b18ejx4s9mk.p"]
+
+[nets.n_6a2b3cm6t4qe]
+ports = ["b_7d2c4nw7r1fs.n", "b_9b18ejx4s9mk.n", "b_cf0f0q3zc6vn.g"]
+
+[nets.n_9c1d0x9g3krz]
+ports = ["b_9b18ejx4s9mk.shaft", "b_e5f20hp8k1wt.flange"]
+
+# Signal properties, keyed by the producing port
+[signals."b_4a10f3k8m2qx.y"]
+name = "speed_error"
+log = true
+
+[signals."b_5c2d9tz6hyaw.y"]
+name = "voltage_cmd"
+analysis_point = true           # design field, see Section 7

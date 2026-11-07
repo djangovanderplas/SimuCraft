@@ -1,0 +1,23 @@
+[package]
+name = "simucraft-py"
+description = "Python bindings for SimuCraft."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+name = "_native"
+crate-type = ["cdylib"]
+test = false
+doctest = false
+
+[dependencies]
+simucraft-format.workspace = true
+serde_json.workspace = true
+pyo3 = { version = "0.30", features = ["abi3-py311"] }
+
+[lints]
+workspace = true

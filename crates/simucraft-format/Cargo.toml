@@ -1,0 +1,17 @@
+[package]
+name = "simucraft-format"
+description = "SimuCraft project files: schemas, checks and a format-preserving writer."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+simucraft-contracts.workspace = true
+serde.workspace = true
+toml_edit = { workspace = true, features = ["serde"] }
+getrandom.workspace = true
+
+[lints]
+workspace = true

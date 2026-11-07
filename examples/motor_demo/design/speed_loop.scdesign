@@ -1,0 +1,47 @@
+format = "simucraft.design/0.1"
+name = "speed_loop"
+model = "../models/speed_control.scmodel"
+
+[operating_points.nominal]
+method = "trim"                    # trim | snapshot | initial
+free = ["speed_ref"]               # inputs or states the solver may adjust
+
+[operating_points.nominal.outputs] # targets
+speed = 100.0
+
+[operating_points.load_range]      # a family of points, e.g. for scheduling
+base = "nominal"
+
+[operating_points.load_range.grid]
+"motor.J_load" = [0.008, 0.012, 0.016]
+
+[tunable.pi]                       # how a block is parameterized for tuning
+block = "pi"
+form = "pid"                       # scalar | pid | tf | ss | gain_surface
+
+[tunable.pi.params]
+P.min = 0.0
+I.min = 0.0
+D.fixed = 0.0
+
+[loops.speed]
+open_at = ["voltage_cmd"]          # analysis points
+
+[requirements.settle_fast]
+kind = "step_tracking"
+from = "speed_ref"
+to = "speed"
+time_constant = 0.05
+at = "load_range"                  # operating points it applies to
+hard = false
+
+[requirements.margins]
+kind = "margins"
+loop = "speed"
+gain_db = 6.0
+phase_deg = 45.0
+hard = true
+
+[requirements.no_saturation]
+kind = "assert"                    # checked in simulations and experiments
+expr = "max(abs(voltage_cmd)) < 24.0[V]"

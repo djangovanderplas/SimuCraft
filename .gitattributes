@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.scmodel  text eol=lf
+*.sclayout text eol=lf
+*.scexp    text eol=lf
+*.scdesign text eol=lf

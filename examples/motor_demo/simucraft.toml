@@ -1,0 +1,12 @@
+format = "simucraft.project/0.1"
+name = "motor_demo"
+top = "models/speed_control.scmodel"
+
+[libraries]                  # pip packages that provide blocks
+simucraft-core = "0.1"
+
+[defaults.simulation]        # models and experiments can override
+solver = "auto"
+stop_time = 10.0
+rel_tol = 1e-6
+abs_tol = 1e-8
