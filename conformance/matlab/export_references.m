@@ -96,7 +96,7 @@ add(m, 'simulink/Sources/Constant', 'c', {'Value', '2'});
 add(m, 'simulink/Sources/Step', 'step', {'Time', '1', 'Before', '0', 'After', '3', 'SampleTime', '0'});
 add(m, 'simulink/Math Operations/Sum', 'sum', {'Inputs', '+-'});
 add(m, 'simulink/Math Operations/Gain', 'gain', {'Gain', '0.5'});
-out(m, 'y', 1);
+outport(m, 'y', 1);
 wire(m, 'c/1', 'sum/1'); wire(m, 'step/1', 'sum/2');
 wire(m, 'sum/1', 'gain/1'); wire(m, 'gain/1', 'y/1');
 T = 3;
@@ -106,7 +106,7 @@ function T = integrator_ramp(m)
 % x' = 1, x(0) = 0.5.
 add(m, 'simulink/Sources/Constant', 'c', {'Value', '1'});
 add(m, 'simulink/Continuous/Integrator', 'int', {'InitialCondition', '0.5'});
-out(m, 'x', 1);
+outport(m, 'x', 1);
 wire(m, 'c/1', 'int/1'); wire(m, 'int/1', 'x/1');
 T = 5;
 end
@@ -118,7 +118,7 @@ add(m, 'simulink/Continuous/Integrator', 'x_int', {'InitialCondition', '1'});
 add(m, 'simulink/Math Operations/Gain', 'c', {'Gain', '-0.5'});
 add(m, 'simulink/Math Operations/Gain', 'k', {'Gain', '-4'});
 add(m, 'simulink/Math Operations/Sum', 'a', {'Inputs', '++'});
-out(m, 'x', 1); out(m, 'v', 2);
+outport(m, 'x', 1); outport(m, 'v', 2);
 wire(m, 'v_int/1', 'x_int/1'); wire(m, 'v_int/1', 'c/1'); wire(m, 'x_int/1', 'k/1');
 wire(m, 'c/1', 'a/1'); wire(m, 'k/1', 'a/2'); wire(m, 'a/1', 'v_int/1');
 wire(m, 'x_int/1', 'x/1'); wire(m, 'v_int/1', 'v/1');
@@ -129,7 +129,7 @@ function T = transfer_fcn_step(m)
 % Unit step into 4 / (s^2 + 0.5 s + 4).
 add(m, 'simulink/Sources/Step', 'step', {'Time', '0', 'Before', '0', 'After', '1', 'SampleTime', '0'});
 add(m, 'simulink/Continuous/Transfer Fcn', 'tf', {'Numerator', '[4]', 'Denominator', '[1 0.5 4]'});
-out(m, 'y', 1);
+outport(m, 'y', 1);
 wire(m, 'step/1', 'tf/1'); wire(m, 'tf/1', 'y/1');
 T = 10;
 end
@@ -141,7 +141,7 @@ add(m, 'simulink/Math Operations/Sum', 'err', {'Inputs', '+-'});
 add(m, 'simulink/Continuous/PID Controller', 'pid', ...
     {'Controller', 'PID', 'P', '2', 'I', '5', 'D', '0.1', 'N', '100'});
 add(m, 'simulink/Continuous/Transfer Fcn', 'plant', {'Numerator', '[2]', 'Denominator', '[0.5 1]'});
-out(m, 'y', 1); out(m, 'u', 2);
+outport(m, 'y', 1); outport(m, 'u', 2);
 wire(m, 'ref/1', 'err/1'); wire(m, 'err/1', 'pid/1'); wire(m, 'pid/1', 'plant/1');
 wire(m, 'plant/1', 'err/2'); wire(m, 'plant/1', 'y/1'); wire(m, 'pid/1', 'u/1');
 T = 5;
@@ -151,7 +151,7 @@ function T = saturation_sine(m)
 % A 0.5 Hz sine of amplitude 2 through a saturation at +-1 (zero crossings).
 add(m, 'simulink/Sources/Sine Wave', 'sine', {'Amplitude', '2', 'Frequency', 'pi', 'SampleTime', '0'});
 add(m, 'simulink/Discontinuities/Saturation', 'sat', {'UpperLimit', '1', 'LowerLimit', '-1'});
-out(m, 'y', 1); out(m, 'u', 2);
+outport(m, 'y', 1); outport(m, 'u', 2);
 wire(m, 'sine/1', 'sat/1'); wire(m, 'sat/1', 'y/1'); wire(m, 'sine/1', 'u/1');
 T = 4;
 end
@@ -161,7 +161,7 @@ function T = saturating_integrator(m)
 add(m, 'simulink/Sources/Sine Wave', 'sine', {'Amplitude', '1', 'Frequency', '1', 'SampleTime', '0'});
 add(m, 'simulink/Continuous/Integrator', 'int', {'InitialCondition', '0', ...
     'LimitOutput', 'on', 'UpperSaturationLimit', '0.5', 'LowerSaturationLimit', '-0.5'});
-out(m, 'x', 1);
+outport(m, 'x', 1);
 wire(m, 'sine/1', 'int/1'); wire(m, 'int/1', 'x/1');
 T = 10;
 end
@@ -173,7 +173,7 @@ add(m, 'simulink/Math Operations/Sum', 'err', {'Inputs', '+-'});
 add(m, 'simulink/Discrete/Discrete PID Controller', 'pi', ...
     {'Controller', 'PI', 'P', '2', 'I', '5', 'SampleTime', '0.001'});
 add(m, 'simulink/Continuous/Transfer Fcn', 'plant', {'Numerator', '[2]', 'Denominator', '[0.5 1]'});
-out(m, 'y', 1); out(m, 'u', 2);
+outport(m, 'y', 1); outport(m, 'u', 2);
 wire(m, 'ref/1', 'err/1'); wire(m, 'err/1', 'pi/1'); wire(m, 'pi/1', 'plant/1');
 wire(m, 'plant/1', 'err/2'); wire(m, 'plant/1', 'y/1'); wire(m, 'pi/1', 'u/1');
 T = 3;
@@ -186,7 +186,7 @@ add(m, 'simulink/Discrete/Zero-Order Hold', 'zoh_fast', {'SampleTime', '0.001'})
 add(m, 'simulink/Math Operations/Gain', 'gain', {'Gain', '2'});
 add(m, 'simulink/Signal Attributes/Rate Transition', 'rt', {'OutPortSampleTime', '0.01'});
 add(m, 'simulink/Discrete/Unit Delay', 'delay', {'InitialCondition', '0', 'SampleTime', '0.01'});
-out(m, 'fast', 1); out(m, 'slow', 2);
+outport(m, 'fast', 1); outport(m, 'slow', 2);
 wire(m, 'sine/1', 'zoh_fast/1'); wire(m, 'zoh_fast/1', 'gain/1');
 wire(m, 'gain/1', 'rt/1'); wire(m, 'rt/1', 'delay/1');
 wire(m, 'gain/1', 'fast/1'); wire(m, 'delay/1', 'slow/1');
@@ -199,7 +199,7 @@ function add(m, lib, name, params)
 add_block(lib, [m '/' name], params{:});
 end
 
-function out(m, name, port)
+function outport(m, name, port)
 add_block('simulink/Sinks/Out1', [m '/' name], 'Port', num2str(port));
 end
 
