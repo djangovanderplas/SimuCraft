@@ -219,6 +219,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "simucraft-compiler"
+version = "0.0.1"
+dependencies = [
+ "simucraft-blocks",
+ "simucraft-contracts",
+ "simucraft-expr",
+ "simucraft-format",
+ "toml_edit",
+]
+
+[[package]]
 name = "simucraft-contracts"
 version = "0.0.1"
 dependencies = [
