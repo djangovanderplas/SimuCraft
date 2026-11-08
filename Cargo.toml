@@ -12,6 +12,7 @@ repository = "https://github.com/djangovanderplas/SimuCraft"
 [workspace.dependencies]
 simucraft-contracts = { path = "crates/simucraft-contracts" }
 simucraft-blocks = { path = "crates/simucraft-blocks" }
+simucraft-compiler = { path = "crates/simucraft-compiler" }
 simucraft-format = { path = "crates/simucraft-format" }
 simucraft-expr = { path = "crates/simucraft-expr" }
 serde = { version = "1", features = ["derive"] }
