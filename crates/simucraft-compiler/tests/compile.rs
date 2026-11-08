@@ -180,6 +180,19 @@ fn motor_demo_signal_flow_part_compiles() {
     assert_eq!(m.logged["speed_error"], error.outputs[0]);
 }
 
+#[test]
+fn a_parameter_value_is_in_its_declared_unit() {
+    // `expr = "250 * 2"` has no unit, so it is in the declared ms, as `value = 500.0` is.
+    let path = fixture("pid_loop.scmodel");
+    let text = disk(&path)
+        .unwrap()
+        .replace("value = 500.0\nunit", "expr = \"250 * 2\"\nunit");
+    assert!(text.contains("expr = \"250 * 2\""));
+    let (m, _) = ok(&path, &|_| Some(text.clone()));
+    let (_, plant) = block(&m, "b_000000000004");
+    assert_eq!(plant.params["den"], ParamValue::Vector(vec![0.5, 1.0]));
+}
+
 /// Compile the PID fixture with one text edit and return its errors.
 fn broken(from: &str, to: &str) -> Vec<Diagnostic> {
     let path = fixture("pid_loop.scmodel");

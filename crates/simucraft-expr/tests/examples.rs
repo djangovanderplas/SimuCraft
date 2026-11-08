@@ -156,6 +156,17 @@ fn unspecified_units_are_never_an_error() {
     assert_eq!(check_units(&e, &|_| Some(None)), Ok(None));
 }
 
+#[test]
+fn a_number_without_a_unit_is_unspecified() {
+    let metres = |_: &str| Some(Some(Unit::parse("m").unwrap()));
+    let unit = |s: &str| check_units(&parse(s).unwrap(), &metres);
+    assert_eq!(unit("x + 1"), Ok(None));
+    assert_eq!(unit("2 * x"), Ok(None));
+    assert_eq!(unit("x ** 2"), Ok(Some(Unit::parse("m2").unwrap())));
+    assert_eq!(unit("x + 1[mm]"), Ok(Some(Unit::parse("m").unwrap())));
+    assert_eq!(unit("x + 1[s]").unwrap_err().code, "C104");
+}
+
 /// Expressions that cover every differentiable operator and function.
 const SMOOTH: &[&str] = &[
     "J + J_load",
