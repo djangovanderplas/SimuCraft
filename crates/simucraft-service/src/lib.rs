@@ -320,6 +320,28 @@ impl Service {
                 }
                 Ok(Json::Array(out))
             }
+            Command::LibraryList { filter } => {
+                let q = filter.unwrap_or_default().to_lowercase();
+                let types: Vec<Json> = simucraft_blocks::library()
+                    .iter()
+                    .map(|t| t.spec())
+                    .filter(|s| s.type_name.to_lowercase().contains(&q) || s.doc.to_lowercase().contains(&q))
+                    .map(|s| json!({"type": s.type_name, "doc": s.doc}))
+                    .collect();
+                Ok(Json::Array(types))
+            }
+            Command::LibraryDescribe { type_name } => {
+                let library = simucraft_blocks::library();
+                let spec = library
+                    .iter()
+                    .map(|t| t.spec())
+                    .find(|s| s.type_name == type_name)
+                    .ok_or_else(|| fail(codes::NOT_FOUND, format!("no block type `{type_name}`")))?;
+                let mut out = json!(spec);
+                // The ports a block gets with the default parameters, for variadic blocks.
+                out["default_input_names"] = json!(spec.input_names(&Default::default()).unwrap_or_default());
+                Ok(out)
+            }
             Command::Compile { model } => {
                 let (_, diagnostics) = self.compile(&model)?;
                 Ok(json!({"diagnostics": diagnostics}))
@@ -640,10 +662,12 @@ impl Service {
                 }
             }
         }
+        // Runs stay: a client can open the project again (to read edits on disk) and keep its run IDs.
         *self = Service {
             root: Some(root.to_path_buf()),
             top,
             files,
+            runs: std::mem::take(&mut self.runs),
             ..Default::default()
         };
         let models: Vec<&String> = self.files.keys().collect();
@@ -778,6 +802,17 @@ fn toml(v: &Json) -> Result<toml_edit::Value, RpcError> {
 }
 
 /// Semantic diff of two JSON trees: one change per added, removed or changed key.
+/// The semantic diff between two versions of a TOML project file: one
+/// change for each key path that differs.
+pub fn semantic_diff(file: &str, old: &str, new: &str) -> Result<Vec<Change>, String> {
+    let parse = |text: &str, which: &str| {
+        toml_edit::de::from_str::<Json>(text).map_err(|e| format!("{which} version of `{file}`: {e}"))
+    };
+    let mut out = Vec::new();
+    json_diff(file, "", &parse(old, "the old")?, &parse(new, "the new")?, &mut out);
+    Ok(out)
+}
+
 fn json_diff(file: &str, path: &str, old: &Json, new: &Json, out: &mut Vec<Change>) {
     let join = |k: &str| {
         if path.is_empty() {
