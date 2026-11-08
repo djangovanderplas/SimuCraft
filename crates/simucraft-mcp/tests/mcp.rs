@@ -240,3 +240,59 @@ fn the_binary_speaks_mcp_on_stdio() {
     assert_eq!(lines[0]["result"]["protocolVersion"], "2024-11-05");
     assert_eq!(lines[1]["result"]["tools"].as_array().unwrap().len(), 6);
 }
+
+/// Gate G1 for MCP: the conformance `pid_plant` model, run through the tools,
+/// matches its Simulink ode4 reference in min, max and final value.
+#[test]
+fn pid_plant_matches_simulink_through_mcp() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let dir = std::env::temp_dir().join(format!("simucraft-mcp-g1-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("models")).unwrap();
+    std::fs::write(
+        dir.join("simucraft.toml"),
+        "format = \"simucraft.project/0.1\"\nname = \"g1\"\ntop = \"models/pid_plant.scmodel\"\n",
+    )
+    .unwrap();
+    let model = std::fs::read_to_string(repo.join("conformance/models/pid_plant.scmodel")).unwrap();
+    let settings = "\n[simulation]\nsolver = \"rk4\"\nfixed_step = 0.001\nstop_time = 5.0\n";
+    std::fs::write(dir.join("models/pid_plant.scmodel"), model + settings).unwrap();
+
+    let mut agent = Agent {
+        server: Server::open(&dir).unwrap(),
+        id: 0,
+    };
+    assert_eq!(agent.ok("check", json!({}))["ok"], true);
+    let run = agent.ok("simulate", json!({}));
+    let summary = agent.ok("signal_summary", json!({"run": run["run"]}));
+
+    let csv = std::fs::read_to_string(repo.join("conformance/references/ref_pid_plant.ode4.csv")).unwrap();
+    let mut lines = csv.lines();
+    let header: Vec<&str> = lines.next().unwrap().split(',').collect();
+    let rows: Vec<Vec<f64>> = lines
+        .map(|l| l.split(',').map(|v| v.parse().unwrap()).collect())
+        .collect();
+    for name in ["y", "u"] {
+        let k = header.iter().position(|h| *h == name).unwrap();
+        let column: Vec<f64> = rows.iter().map(|r| r[k]).collect();
+        let reference = [
+            ("min", column.iter().copied().fold(f64::INFINITY, f64::min)),
+            ("max", column.iter().copied().fold(f64::NEG_INFINITY, f64::max)),
+            ("final", *column.last().unwrap()),
+        ];
+        let s = &summary[name];
+        for (stat, want) in reference {
+            let got = if stat == "final" {
+                s[stat][0].as_f64()
+            } else {
+                s[stat].as_f64()
+            }
+            .unwrap();
+            // The limit of the `pid_plant` ode4 case in conformance/src/main.rs.
+            assert!(
+                (got - want).abs() <= 1e-12 + 1e-12 * want.abs(),
+                "{name} {stat}: {got} vs Simulink {want}"
+            );
+        }
+    }
+}
