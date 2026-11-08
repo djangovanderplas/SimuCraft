@@ -17,6 +17,10 @@ cargo test --workspace -q
 echo "== conformance: SimuCraft against the Simulink reference runs"
 cargo run -q -p simucraft-conformance
 
+echo "== editor: typecheck, test"
+[[ -d editor/node_modules ]] || npm --prefix editor ci --silent
+npm --prefix editor run -s check
+
 echo "== python: build wheel into .venv, test"
 [[ -d .venv ]] || uv venv -q .venv
 uv pip install -q --python .venv maturin pytest
