@@ -1181,6 +1181,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "simucraft-conformance"
+version = "0.0.1"
+dependencies = [
+ "simucraft-blocks",
+ "simucraft-compiler",
+ "simucraft-contracts",
+ "simucraft-runtime",
+]
+
+[[package]]
 name = "simucraft-contracts"
 version = "0.0.1"
 dependencies = [

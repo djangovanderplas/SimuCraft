@@ -1,0 +1,18 @@
+[package]
+name = "simucraft-conformance"
+description = "Compares SimuCraft runs with the Simulink reference runs (WP1.5)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+simucraft-blocks.workspace = true
+simucraft-compiler.workspace = true
+simucraft-contracts.workspace = true
+simucraft-runtime.workspace = true
+
+[lints]
+workspace = true

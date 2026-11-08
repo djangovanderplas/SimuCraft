@@ -1,8 +1,35 @@
 # Conformance against Simulink
 
 SimuCraft is correct when it gives the same results as Simulink for the same
-model. This folder holds the reference runs and, later, the harness that
-compares them (WP1.5).
+model. This folder holds the reference runs and the harness that compares
+them (WP1.5).
+
+## Run the comparison
+
+`scripts/check.sh` runs it. To run it alone:
+
+```sh
+cargo run -p simucraft-conformance
+```
+
+The harness compiles each model in `models/` and runs it two times:
+
+- RK4 with step 1e-3. It compares the result with `ref_<name>.ode4.csv`.
+- Dormand-Prince with RelTol 1e-10 and AbsTol 1e-12. It compares the result with `ref_<name>.tight.csv`.
+
+A sample passes when `|simucraft - simulink| <= atol + rtol * |simulink|`.
+The tolerances and their reasons are in one table: `CASES` in `src/main.rs`.
+The harness writes the result to `report.md`, one line for each model and run.
+
+A case that SimuCraft cannot run yet is marked "expected to fail", with the
+work package that fixes it. If such a case passes, the harness fails. Then
+remove the mark. Do not make a case pass with a wider tolerance.
+
+## Add a model
+
+1. Add a builder function to `matlab/export_references.m` and make the reference runs again.
+2. Write the same model in `models/<name>.scmodel`.
+3. Add two lines to `CASES`: one for `ode4` and one for `tight`.
 
 ## Make the reference runs
 
