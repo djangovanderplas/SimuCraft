@@ -2,12 +2,12 @@
 //!
 //! Each block works element by element on its input width, unless its doc
 //! says otherwise. Parameters a model leaves out take the default in the
-//! block's [`BlockSpec`]. The compiler passes a block's `ts` field as the
-//! parameter `ts`; blocks that can be discrete read it.
+//! block's [`BlockSpec`]. Blocks that can be discrete (`core.PID`) take the
+//! sample time that the compiler passes to `build`.
 
 use simucraft_contracts::Diagnostic;
 use simucraft_contracts::block::{
-    Block, BlockSpec, BlockType, Built, Ctx, DType, Layout, ParamSpec, Params, PortSpec, SampleTime,
+    Block, BlockSpec, BlockType, Built, Ctx, DType, Layout, ParamSpec, Params, PortSpec, SampleTime, VariadicInputs,
 };
 use simucraft_contracts::ir::ParamValue;
 
@@ -21,7 +21,7 @@ pub mod codes {
 
 /// All block types of the core library.
 pub fn library() -> Vec<Box<dyn BlockType>> {
-    vec![
+    let defs = vec![
         def(
             "core.Constant",
             "Outputs a constant value.",
@@ -66,7 +66,7 @@ pub fn library() -> Vec<Box<dyn BlockType>> {
         def(
             "core.Sum",
             "Adds or subtracts its inputs, one input per sign: `u1`, `u2`, and so on.",
-            &["u1", "u2"],
+            &[],
             &["y"],
             &[("signs", "++", "One `+` or `-` per input")],
             |p, w| {
@@ -87,7 +87,8 @@ pub fn library() -> Vec<Box<dyn BlockType>> {
                     p.layout(w, width, &vec![true; w.len()], SampleTime::Inherited),
                 ))
             },
-        ),
+        )
+        .variadic("u", "signs"),
         def(
             "core.Integrator",
             "y = x, dx/dt = u.",
@@ -120,7 +121,7 @@ pub fn library() -> Vec<Box<dyn BlockType>> {
         ),
         def(
             "core.PID",
-            "PID controller P + I/s + D N s/(s + N). With `ts` > 0 it is discrete, with forward-Euler integration.",
+            "PID controller P + I/s + D N s/(s + N). With a discrete sample time it is discrete, with forward-Euler integration.",
             &["u"],
             &["y"],
             &[
@@ -128,7 +129,6 @@ pub fn library() -> Vec<Box<dyn BlockType>> {
                 ("I", "0", "Integral gain"),
                 ("D", "0", "Derivative gain"),
                 ("N", "100", "Derivative filter coefficient"),
-                ("ts", "0", "Sample time [s]; 0 is continuous"),
             ],
             |p, w| {
                 let pid = Pid {
@@ -136,16 +136,16 @@ pub fn library() -> Vec<Box<dyn BlockType>> {
                     i: p.num("I")?,
                     d: p.num("D")?,
                     n: p.num("N")?,
-                    ts: p.num("ts")?,
+                    ts: match p.sample_time {
+                        SampleTime::Discrete { period, .. } => period,
+                        _ => 0.0,
+                    },
                 };
                 let width = w[0];
-                let rate = if pid.ts > 0.0 {
-                    SampleTime::Discrete {
-                        period: pid.ts,
-                        offset: 0.0,
-                    }
-                } else {
-                    SampleTime::Continuous
+                // An unknown rate stays unknown, so the compiler can resolve it later.
+                let rate = match p.sample_time {
+                    SampleTime::Discrete { .. } | SampleTime::Inherited => p.sample_time,
+                    _ => SampleTime::Continuous,
                 };
                 let mut l = p.layout(w, width, &[true], rate);
                 // Per element: the integral and the derivative filter state.
@@ -214,7 +214,8 @@ pub fn library() -> Vec<Box<dyn BlockType>> {
             &[],
             |p, w| Ok((Box::new(Nothing), p.layout(w, 0, &[false], SampleTime::Inherited))),
         ),
-    ]
+    ];
+    defs.into_iter().map(|d| Box::new(d) as Box<dyn BlockType>).collect()
 }
 
 // ---------------------------------------------------------------- definitions
@@ -230,19 +231,21 @@ impl BlockType for Def {
     fn spec(&self) -> &BlockSpec {
         &self.spec
     }
-    fn build(&self, params: &Params, input_widths: &[usize]) -> Result<Built, Diagnostic> {
+    fn build(&self, params: &Params, input_widths: &[usize], sample_time: SampleTime) -> Result<Built, Diagnostic> {
         if input_widths.contains(&0) {
             return Err(Diagnostic::error(codes::WIDTH, "an input has width 0"));
         }
-        // Only `core.Sum` takes one input per sign; all others take the ports of their spec.
-        let variadic = self.spec.type_name == "core.Sum" && !input_widths.is_empty();
-        if !variadic && input_widths.len() != self.spec.inputs.len() {
+        let ports = self
+            .spec
+            .input_names(params)
+            .map_err(|m| Diagnostic::error(codes::PARAM, m))?;
+        if input_widths.len() != ports.len() {
             return Err(Diagnostic::error(
                 codes::WIDTH,
                 format!(
                     "`{}` takes {} inputs, not {}",
                     self.spec.type_name,
-                    self.spec.inputs.len(),
+                    ports.len(),
                     input_widths.len()
                 ),
             ));
@@ -251,6 +254,7 @@ impl BlockType for Def {
             &Args {
                 spec: &self.spec,
                 params,
+                sample_time,
             },
             input_widths,
         )
@@ -264,7 +268,7 @@ fn def(
     outputs: &[&str],
     params: &[(&str, &str, &str)],
     build: BuildFn,
-) -> Box<dyn BlockType> {
+) -> Def {
     let port = |name: &&str| PortSpec {
         name: name.to_string(),
         doc: String::new(),
@@ -272,7 +276,7 @@ fn def(
         width: None,
         unit: None,
     };
-    Box::new(Def {
+    Def {
         spec: BlockSpec {
             type_name: type_name.into(),
             doc: doc.into(),
@@ -287,17 +291,37 @@ fn def(
                 })
                 .collect(),
             inputs: inputs.iter().map(port).collect(),
+            variadic_inputs: None,
             outputs: outputs.iter().map(port).collect(),
             connectors: vec![],
         },
         build,
-    })
+    }
+}
+
+impl Def {
+    /// Add inputs `<prefix>1`, `<prefix>2`, ..., one for each element of parameter `count`.
+    fn variadic(mut self, prefix: &str, count: &str) -> Self {
+        self.spec.variadic_inputs = Some(VariadicInputs {
+            port: PortSpec {
+                name: prefix.into(),
+                doc: String::new(),
+                dtype: DType::F64,
+                width: None,
+                unit: None,
+            },
+            count: count.into(),
+        });
+        self
+    }
 }
 
 /// Parameters with the spec's defaults behind them.
 struct Args<'a> {
     spec: &'a BlockSpec,
     params: &'a Params,
+    /// The sample time that the compiler resolved for this block.
+    sample_time: SampleTime,
 }
 
 impl Args<'_> {

@@ -65,13 +65,14 @@ fn every_block_type_builds_with_its_defaults_and_fits_its_spec() {
     }
     for ty in library() {
         let spec = ty.spec();
-        let widths = vec![1; spec.inputs.len()];
+        let ports = spec.input_names(&Params::new()).unwrap();
+        let widths = vec![1; ports.len()];
         let (_, layout) = ty
-            .build(&Params::new(), &widths)
+            .build(&Params::new(), &widths, SampleTime::Continuous)
             .unwrap_or_else(|d| panic!("{}: {d:?}", spec.type_name));
-        assert_eq!(layout.inputs.len(), spec.inputs.len(), "{}", spec.type_name);
+        assert_eq!(layout.inputs.len(), ports.len(), "{}", spec.type_name);
         assert_eq!(layout.outputs.len(), spec.outputs.len(), "{}", spec.type_name);
-        assert_eq!(layout.feedthrough.len(), spec.inputs.len(), "{}", spec.type_name);
+        assert_eq!(layout.feedthrough.len(), ports.len(), "{}", spec.type_name);
         assert!(
             spec.params.iter().all(|p| p.default.is_some()),
             "{}: a parameter has no default",
@@ -83,15 +84,33 @@ fn every_block_type_builds_with_its_defaults_and_fits_its_spec() {
 #[test]
 fn bad_parameters_are_diagnostics() {
     let text = Params::from([("k".into(), ParamValue::Text("x".into()))]);
-    assert_eq!(find("core.Gain").build(&text, &[1]).err().unwrap().code, "C201");
+    assert_eq!(
+        find("core.Gain")
+            .build(&text, &[1], SampleTime::Continuous)
+            .err()
+            .unwrap()
+            .code,
+        "C201"
+    );
     let signs = Params::from([("signs".into(), ParamValue::Text("+-+".into()))]);
-    assert_eq!(find("core.Sum").build(&signs, &[1, 1]).err().unwrap().code, "C202");
+    assert_eq!(
+        find("core.Sum")
+            .build(&signs, &[1, 1], SampleTime::Continuous)
+            .err()
+            .unwrap()
+            .code,
+        "C202"
+    );
     let improper = Params::from([
         ("num".into(), ParamValue::Vector(vec![1.0, 0.0, 0.0])),
         ("den".into(), ParamValue::Vector(vec![1.0, 1.0])),
     ]);
     assert_eq!(
-        find("core.TransferFcn").build(&improper, &[1]).err().unwrap().code,
+        find("core.TransferFcn")
+            .build(&improper, &[1], SampleTime::Continuous)
+            .err()
+            .unwrap()
+            .code,
         "C201"
     );
 }
@@ -253,9 +272,12 @@ fn discrete_pid_uses_forward_euler_at_its_sample_time() {
         ("I".into(), ParamValue::Scalar(3.0)),
         ("D".into(), ParamValue::Scalar(0.1)),
         ("N".into(), ParamValue::Scalar(10.0)),
-        ("ts".into(), ParamValue::Scalar(0.1)),
     ]);
-    let (mut block, layout) = find("core.PID").build(&params, &[1]).unwrap();
+    let rate = SampleTime::Discrete {
+        period: 0.1,
+        offset: 0.0,
+    };
+    let (mut block, layout) = find("core.PID").build(&params, &[1], rate).unwrap();
     assert_eq!(
         layout.sample_time,
         SampleTime::Discrete {

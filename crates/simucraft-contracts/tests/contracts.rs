@@ -136,3 +136,19 @@ fn fake_service_edits_dry_runs_and_undoes() {
     let unknown = svc.handle(Request::new(2, Command::Redo {}));
     assert!(matches!(unknown.outcome, Outcome::Error(e) if e.code == -32601));
 }
+
+#[test]
+fn variadic_inputs_take_their_count_from_a_parameter() {
+    use simucraft_contracts::block::Params;
+    use simucraft_contracts::ir::ParamValue;
+    let lib = simucraft_contracts::fake::library();
+    let sum = lib.iter().find(|t| t.spec().type_name == "core.Sum").unwrap().spec();
+    let names = |p: Params| sum.input_names(&p);
+    let signs = |s: &str| Params::from([("signs".into(), ParamValue::Text(s.into()))]);
+    assert_eq!(names(signs("+-+")).unwrap(), ["u1", "u2", "u3"]);
+    assert!(names(Params::from([("signs".into(), ParamValue::Bool(true))])).is_err());
+    // The fake Sum has no default for `signs`.
+    assert!(names(Params::new()).is_err());
+    let gain = lib.iter().find(|t| t.spec().type_name == "core.Gain").unwrap().spec();
+    assert_eq!(gain.input_names(&Params::new()).unwrap(), ["u"]);
+}
