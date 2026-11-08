@@ -1,4 +1,4 @@
-"""WP1.4: the PID example is built and saved from Python."""
+"""WP1.4: the PID example is built, saved, compiled and simulated from Python."""
 
 import json
 import subprocess
@@ -44,6 +44,14 @@ def test_pid_example_is_built_and_saved(tmp_path):
 
     again = sc.open(tmp_path).model()
     assert again.block("pid").id == pid.id
+
+    # Compile and simulate the saved model: PI on 1 / (0.5 s + 1) settles at the reference.
+    assert again.compile() == []
+    run = again.simulate(stop_time=10.0)
+    assert run.signals == ["y"]
+    y = run.signal("y")
+    assert y.t[-1] == 10.0 and abs(y.values[-1] - 1.0) < 1e-3
+    assert run.summary("y")["max"] >= y.values[-1]
 
 
 def test_a_failed_transaction_rolls_back(tmp_path):
