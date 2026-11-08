@@ -9,14 +9,22 @@
 //!
 //! Names resolve in the top model; `a/b` goes into subsystem `a`. IDs
 //! (`b_…`) resolve in any open model file.
+//!
+//! `compile` and `simulate` use the files in memory, so unsaved edits count.
+//! A run keeps its traces in memory until the service stops; `signal.get`
+//! reads them.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path, PathBuf};
 
 use serde_json::{Value as Json, json};
 use simucraft_contracts::Diagnostic;
-use simucraft_contracts::api::{Change, ChangeOp, Command, Edit, EditResult, Outcome, Request, Response, RpcError};
-use simucraft_format::{File, Kind, id};
+use simucraft_contracts::api::{
+    Change, ChangeOp, Command, Edit, EditResult, Outcome, Request, Response, RpcError, SignalMode, Simulate,
+};
+use simucraft_contracts::ir::{CompiledModel, Slots};
+use simucraft_format::{File, Kind, id, schema};
+use simucraft_runtime::{Bdf, DormandPrince, Euler, Rk4, Simulation, Solver, Traces};
 
 /// Diagnostic codes of the service.
 pub mod codes {
@@ -43,7 +51,12 @@ pub struct Service {
     redo: Vec<(Files, BTreeSet<String>)>,
     /// Snapshot at `tx.begin`, while a transaction is open.
     tx: Option<(Files, BTreeSet<String>)>,
+    /// Finished runs; run `r<n>` is at index `n - 1`.
+    runs: Vec<Traces>,
 }
+
+/// Most points that `signal.get` gives in `decimated` mode.
+const DECIMATED_POINTS: usize = 1000;
 
 fn fail(code: &str, message: impl Into<String>) -> RpcError {
     let message = message.into();
@@ -307,6 +320,34 @@ impl Service {
                 }
                 Ok(Json::Array(out))
             }
+            Command::LibraryList { filter } => {
+                let q = filter.unwrap_or_default().to_lowercase();
+                let types: Vec<Json> = simucraft_blocks::library()
+                    .iter()
+                    .map(|t| t.spec())
+                    .filter(|s| s.type_name.to_lowercase().contains(&q) || s.doc.to_lowercase().contains(&q))
+                    .map(|s| json!({"type": s.type_name, "doc": s.doc}))
+                    .collect();
+                Ok(Json::Array(types))
+            }
+            Command::LibraryDescribe { type_name } => {
+                let library = simucraft_blocks::library();
+                let spec = library
+                    .iter()
+                    .map(|t| t.spec())
+                    .find(|s| s.type_name == type_name)
+                    .ok_or_else(|| fail(codes::NOT_FOUND, format!("no block type `{type_name}`")))?;
+                let mut out = json!(spec);
+                // The ports a block gets with the default parameters, for variadic blocks.
+                out["default_input_names"] = json!(spec.input_names(&Default::default()).unwrap_or_default());
+                Ok(out)
+            }
+            Command::Compile { model } => {
+                let (_, diagnostics) = self.compile(&model)?;
+                Ok(json!({"diagnostics": diagnostics}))
+            }
+            Command::Simulate(args) => self.simulate(args),
+            Command::SignalGet { run, signal, mode } => self.signal(&run, &signal, mode),
             other => {
                 let method = serde_json::to_value(&other)
                     .ok()
@@ -369,6 +410,173 @@ impl Service {
             created,
             diagnostics: vec![]
         }))
+    }
+
+    /// Compile a model file from the files in memory. Files that are not open
+    /// (outside the project) come from the disk.
+    fn compile(&self, name: &str) -> Result<(Option<CompiledModel>, Vec<Diagnostic>), RpcError> {
+        let file = model(&self.files, if name.is_empty() { &self.top } else { name })?;
+        let root = self.root.as_ref().expect("a project is open");
+        let load = |p: &Path| match p
+            .strip_prefix(root)
+            .ok()
+            .and_then(|rel| self.files.get(&normalize(rel)))
+        {
+            Some(f) => Some(f.to_string()),
+            None => std::fs::read_to_string(p).ok(),
+        };
+        Ok(simucraft_compiler::compile(
+            &root.join(&file),
+            &simucraft_blocks::library(),
+            &load,
+        ))
+    }
+
+    /// Compile and run a model with the settings of its `[simulation]` table.
+    fn simulate(&mut self, args: Simulate) -> Result<Json, RpcError> {
+        if !args.overrides.is_empty() {
+            return Err(fail(codes::ARGS, "`overrides` are not supported yet (WP2.4)"));
+        }
+        let (compiled, diagnostics) = self.compile(&args.model)?;
+        let Some(compiled) = compiled else {
+            let first = diagnostics
+                .iter()
+                .find(|d| d.is_error())
+                .map_or("", |d| d.message.as_str());
+            return Err(RpcError {
+                code: 1,
+                message: format!("the model does not compile: {first}"),
+                diagnostics,
+            });
+        };
+        let file = model(&self.files, if args.model.is_empty() { &self.top } else { &args.model })?;
+        let settings: schema::Simulation = match data(&self.files[&file]).get("simulation") {
+            Some(s) => {
+                serde_json::from_value(s.clone()).map_err(|e| fail(codes::ARGS, format!("[simulation]: {e}")))?
+            }
+            None => schema::Simulation::default(),
+        };
+        if settings.start_time.is_some_and(|t| t != 0.0) {
+            return Err(fail(codes::ARGS, "a start time other than 0 is not supported yet"));
+        }
+        let stop = args.stop_time.or(settings.stop_time).unwrap_or(10.0);
+        let step = settings.fixed_step.or(settings.max_step).unwrap_or(stop / 1000.0);
+        if !(stop > 0.0 && stop.is_finite() && step > 0.0 && step.is_finite()) {
+            return Err(fail(codes::ARGS, "the stop time and the step must be positive numbers"));
+        }
+        let (rtol, atol) = (settings.rel_tol.unwrap_or(1e-6), settings.abs_tol.unwrap_or(1e-8));
+        let mut solver: Box<dyn Solver> = match settings.solver.as_deref().unwrap_or("auto") {
+            "auto" | "dormand_prince" => Box::new(DormandPrince::new(rtol, atol)),
+            "bdf" => Box::new(Bdf { rtol, atol }),
+            "rk4" => Box::new(Rk4 { h: step }),
+            "euler" => Box::new(Euler { h: step }),
+            other => {
+                return Err(fail(
+                    codes::ARGS,
+                    format!("unknown solver `{other}`; use auto, dormand_prince, bdf, rk4 or euler"),
+                ));
+            }
+        };
+        // Outports and logged signals, by name; a logged signal wins over an outport of the same name.
+        let mut available: BTreeMap<String, Slots> = compiled.outports.clone();
+        available.extend(compiled.logged.clone());
+        let recorded: BTreeMap<String, Slots> = if args.signals.is_empty() {
+            available
+        } else {
+            args.signals
+                .iter()
+                .map(|n| match available.get(n) {
+                    Some(s) => Ok((n.clone(), *s)),
+                    None => Err(fail(
+                        codes::NOT_FOUND,
+                        format!("the model has no outport or logged signal `{n}`"),
+                    )),
+                })
+                .collect::<Result<_, _>>()?
+        };
+        let to_error = |d: Diagnostic| RpcError {
+            code: 1,
+            message: d.message.clone(),
+            diagnostics: vec![d],
+        };
+        let mut sim = Simulation::new(&compiled, &simucraft_blocks::library()).map_err(to_error)?;
+        let mut traces = Traces {
+            t: Vec::new(),
+            signals: recorded.keys().map(|k| (k.clone(), Vec::new())).collect(),
+        };
+        sim.stream(solver.as_mut(), stop, step, &mut |t, signals| {
+            traces.t.push(t);
+            for (name, s) in &recorded {
+                traces
+                    .signals
+                    .get_mut(name)
+                    .expect("one trace per signal")
+                    .extend(&signals[s.range()]);
+            }
+        })
+        .map_err(to_error)?;
+        let samples = traces.t.len();
+        self.runs.push(traces);
+        Ok(json!({
+            "run": format!("r{}", self.runs.len()),
+            "signals": recorded.keys().collect::<Vec<_>>(),
+            "stop_time": stop,
+            "samples": samples,
+            "diagnostics": diagnostics,
+        }))
+    }
+
+    /// One recorded signal of a run: all samples, at most [`DECIMATED_POINTS`], or statistics.
+    fn signal(&self, run: &str, name: &str, mode: SignalMode) -> Result<Json, RpcError> {
+        let traces = run
+            .strip_prefix('r')
+            .and_then(|n| n.parse::<usize>().ok())
+            .and_then(|n| self.runs.get(n.checked_sub(1)?))
+            .ok_or_else(|| fail(codes::NOT_FOUND, format!("no run `{run}`")))?;
+        let values = traces
+            .signals
+            .get(name)
+            .ok_or_else(|| fail(codes::NOT_FOUND, format!("run `{run}` has no signal `{name}`")))?;
+        let width = values.len() / traces.t.len().max(1);
+        Ok(match mode {
+            SignalMode::Full => json!({"t": traces.t, "values": values, "width": width}),
+            SignalMode::Decimated => {
+                // shortcut: every k-th sample, so a short peak can fall out; use min-max decimation if plots need it.
+                let stride = traces.t.len().div_ceil(DECIMATED_POINTS).max(1);
+                let mut rows: Vec<usize> = (0..traces.t.len()).step_by(stride).collect();
+                if rows.last() != Some(&(traces.t.len().saturating_sub(1))) && !traces.t.is_empty() {
+                    rows.push(traces.t.len() - 1);
+                }
+                let t: Vec<f64> = rows.iter().map(|&r| traces.t[r]).collect();
+                let v: Vec<f64> = rows
+                    .iter()
+                    .flat_map(|&r| values[r * width..(r + 1) * width].to_vec())
+                    .collect();
+                json!({"t": t, "values": v, "width": width})
+            }
+            SignalMode::Summary => {
+                let at = |i: usize| traces.t[i / width.max(1)];
+                let (imin, imax) = (0..values.len()).fold((0, 0), |(lo, hi), i| {
+                    (
+                        if values[i] < values[lo] { i } else { lo },
+                        if values[i] > values[hi] { i } else { hi },
+                    )
+                });
+                if values.is_empty() {
+                    json!({"samples": 0, "width": width})
+                } else {
+                    json!({
+                        "samples": traces.t.len(),
+                        "width": width,
+                        "min": values[imin], "t_min": at(imin),
+                        "max": values[imax], "t_max": at(imax),
+                        "mean": values.iter().sum::<f64>() / values.len() as f64,
+                        "final": &values[values.len() - width..],
+                        "t_final": traces.t.last(),
+                    })
+                }
+            }
+        })
     }
 
     fn step(&mut self, undo: bool) -> Result<Json, RpcError> {
@@ -454,10 +662,12 @@ impl Service {
                 }
             }
         }
+        // Runs stay: a client can open the project again (to read edits on disk) and keep its run IDs.
         *self = Service {
             root: Some(root.to_path_buf()),
             top,
             files,
+            runs: std::mem::take(&mut self.runs),
             ..Default::default()
         };
         let models: Vec<&String> = self.files.keys().collect();
@@ -592,6 +802,17 @@ fn toml(v: &Json) -> Result<toml_edit::Value, RpcError> {
 }
 
 /// Semantic diff of two JSON trees: one change per added, removed or changed key.
+/// The semantic diff between two versions of a TOML project file: one
+/// change for each key path that differs.
+pub fn semantic_diff(file: &str, old: &str, new: &str) -> Result<Vec<Change>, String> {
+    let parse = |text: &str, which: &str| {
+        toml_edit::de::from_str::<Json>(text).map_err(|e| format!("{which} version of `{file}`: {e}"))
+    };
+    let mut out = Vec::new();
+    json_diff(file, "", &parse(old, "the old")?, &parse(new, "the new")?, &mut out);
+    Ok(out)
+}
+
 fn json_diff(file: &str, path: &str, old: &Json, new: &Json, out: &mut Vec<Change>) {
     let join = |k: &str| {
         if path.is_empty() {

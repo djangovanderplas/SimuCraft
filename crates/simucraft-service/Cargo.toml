@@ -8,8 +8,11 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+simucraft-blocks.workspace = true
+simucraft-compiler.workspace = true
 simucraft-contracts.workspace = true
 simucraft-format.workspace = true
+simucraft-runtime.workspace = true
 serde_json.workspace = true
 toml_edit = { workspace = true, features = ["serde"] }
 

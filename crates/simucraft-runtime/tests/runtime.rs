@@ -74,7 +74,7 @@ impl BlockType for CounterType {
     fn spec(&self) -> &BlockSpec {
         &self.0
     }
-    fn build(&self, _: &Params, _: &[usize]) -> Result<Built, simucraft_contracts::Diagnostic> {
+    fn build(&self, _: &Params, _: &[usize], _: SampleTime) -> Result<Built, simucraft_contracts::Diagnostic> {
         let layout = Layout {
             inputs: vec![],
             outputs: vec![1],
@@ -108,6 +108,7 @@ fn discrete_blocks_update_on_their_sample_hits_only() {
         doc: String::new(),
         params: vec![],
         inputs: vec![],
+        variadic_inputs: None,
         outputs: vec![],
         connectors: vec![],
     }))];
