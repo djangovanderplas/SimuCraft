@@ -211,6 +211,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "simucraft-blocks"
+version = "0.0.1"
+dependencies = [
+ "serde_json",
+ "simucraft-contracts",
+]
+
+[[package]]
 name = "simucraft-contracts"
 version = "0.0.1"
 dependencies = [
