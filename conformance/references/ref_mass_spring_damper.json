@@ -1,0 +1,197 @@
+{
+  "model": "ref_mass_spring_damper",
+  "stop_time": 10,
+  "matlab": "26.1.0.3346908 (R2026a) Update 5",
+  "simulink": "26.1",
+  "created": "2026-11-08T01:01:29",
+  "outputs": [
+    "x",
+    "v"
+  ],
+  "runs": [
+    {
+      "name": "ode4",
+      "settings": {
+        "SolverType": "Fixed-step",
+        "Solver": "ode4",
+        "FixedStep": "1e-3"
+      }
+    },
+    {
+      "name": "tight",
+      "settings": {
+        "SolverType": "Variable-step",
+        "Solver": "ode45",
+        "RelTol": "1e-10",
+        "AbsTol": "1e-12",
+        "MaxStep": "1e-2"
+      }
+    }
+  ],
+  "blocks": [
+    {
+      "name": "a",
+      "type": "Sum",
+      "mask": "",
+      "params": {
+        "IconShape": "round",
+        "Inputs": "++",
+        "CollapseMode": "All dimensions",
+        "CollapseDim": "1",
+        "OutMin": "[]",
+        "OutMax": "[]",
+        "OutDataTypeStr": "Inherit: Inherit via internal rule",
+        "AccumDataTypeStr": "Inherit: Inherit via internal rule",
+        "InputSameDT": "off",
+        "LockScale": "off",
+        "RndMeth": "Floor",
+        "SaturateOnIntegerOverflow": "off",
+        "SampleTime": "-1"
+      }
+    },
+    {
+      "name": "c",
+      "type": "Gain",
+      "mask": "",
+      "params": {
+        "Gain": "-0.5",
+        "Multiplication": "Element-wise(K.*u)",
+        "ParamMin": "[]",
+        "ParamMax": "[]",
+        "ParamDataTypeStr": "Inherit: Inherit via internal rule",
+        "OutMin": "[]",
+        "OutMax": "[]",
+        "OutDataTypeStr": "Inherit: Inherit via internal rule",
+        "LockScale": "off",
+        "RndMeth": "Floor",
+        "SaturateOnIntegerOverflow": "off",
+        "SampleTime": "-1"
+      }
+    },
+    {
+      "name": "k",
+      "type": "Gain",
+      "mask": "",
+      "params": {
+        "Gain": "-4",
+        "Multiplication": "Element-wise(K.*u)",
+        "ParamMin": "[]",
+        "ParamMax": "[]",
+        "ParamDataTypeStr": "Inherit: Inherit via internal rule",
+        "OutMin": "[]",
+        "OutMax": "[]",
+        "OutDataTypeStr": "Inherit: Inherit via internal rule",
+        "LockScale": "off",
+        "RndMeth": "Floor",
+        "SaturateOnIntegerOverflow": "off",
+        "SampleTime": "-1"
+      }
+    },
+    {
+      "name": "v_int",
+      "type": "Integrator",
+      "mask": "",
+      "params": {
+        "ExternalReset": "none",
+        "InitialConditionSource": "internal",
+        "InitialCondition": "0",
+        "LimitOutput": "off",
+        "UpperSaturationLimit": "inf",
+        "LowerSaturationLimit": "-inf",
+        "WrapState": "off",
+        "WrappedStateUpperValue": "pi",
+        "WrappedStateLowerValue": "-pi",
+        "ShowSaturationPort": "off",
+        "ShowStatePort": "off",
+        "AbsoluteTolerance": "auto",
+        "IgnoreLimit": "off",
+        "ZeroCross": "on",
+        "ContinuousStateAttributes": "''"
+      }
+    },
+    {
+      "name": "x_int",
+      "type": "Integrator",
+      "mask": "",
+      "params": {
+        "ExternalReset": "none",
+        "InitialConditionSource": "internal",
+        "InitialCondition": "1",
+        "LimitOutput": "off",
+        "UpperSaturationLimit": "inf",
+        "LowerSaturationLimit": "-inf",
+        "WrapState": "off",
+        "WrappedStateUpperValue": "pi",
+        "WrappedStateLowerValue": "-pi",
+        "ShowSaturationPort": "off",
+        "ShowStatePort": "off",
+        "AbsoluteTolerance": "auto",
+        "IgnoreLimit": "off",
+        "ZeroCross": "on",
+        "ContinuousStateAttributes": "''"
+      }
+    },
+    {
+      "name": "x",
+      "type": "Outport",
+      "mask": "",
+      "params": {
+        "Port": "1",
+        "SignalName": "",
+        "StorageClass": "Auto",
+        "IconDisplay": "Port number",
+        "OutputFunctionCall": "off",
+        "OutMin": "[]",
+        "OutMax": "[]",
+        "OutDataTypeStr": "Inherit: auto",
+        "LockScale": "off",
+        "BusOutputAsStruct": "off",
+        "BusVirtuality": "inherit",
+        "DataMode": "inherit",
+        "Unit": "inherit",
+        "PortDimensions": "-1",
+        "VarSizeSig": "Inherit",
+        "SampleTime": "-1",
+        "SignalType": "auto",
+        "EnsureOutportIsVirtual": "off",
+        "OutputWhenDisabled": "held",
+        "InitialOutput": "[]",
+        "MustResolveToSignalObject": "off",
+        "OutputWhenUnConnected": "off",
+        "OutputWhenUnconnectedValue": "0",
+        "VectorParamsAs1DForOutWhenUnconnected": "on"
+      }
+    },
+    {
+      "name": "v",
+      "type": "Outport",
+      "mask": "",
+      "params": {
+        "Port": "2",
+        "SignalName": "",
+        "StorageClass": "Auto",
+        "IconDisplay": "Port number",
+        "OutputFunctionCall": "off",
+        "OutMin": "[]",
+        "OutMax": "[]",
+        "OutDataTypeStr": "Inherit: auto",
+        "LockScale": "off",
+        "BusOutputAsStruct": "off",
+        "BusVirtuality": "inherit",
+        "DataMode": "inherit",
+        "Unit": "inherit",
+        "PortDimensions": "-1",
+        "VarSizeSig": "Inherit",
+        "SampleTime": "-1",
+        "SignalType": "auto",
+        "EnsureOutportIsVirtual": "off",
+        "OutputWhenDisabled": "held",
+        "InitialOutput": "[]",
+        "MustResolveToSignalObject": "off",
+        "OutputWhenUnConnected": "off",
+        "OutputWhenUnconnectedValue": "0",
+        "VectorParamsAs1DForOutWhenUnconnected": "on"
+      }
+    }
+  ]
+}
