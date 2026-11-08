@@ -84,6 +84,8 @@ impl Scope {
                     codes::UNIT,
                     format!("`{src}` has unit {u}, but the parameter declares {d}"),
                 )),
+                // A result with no unit is in the declared unit (owner decision 2026-11-08).
+                (None, Some(d)) => Ok((scaled(v, d.scale), Some(*d))),
                 _ => Ok((v, declared.or(u))),
             }),
             Def::File => Err(Diagnostic::error(
@@ -196,5 +198,14 @@ fn to_param(v: &Value) -> Result<ParamValue, Diagnostic> {
             })
         }
         Value::Signal(_) => Err(bad()),
+    }
+}
+
+/// Multiply every number in `v` by `k`.
+fn scaled(v: Value, k: f64) -> Value {
+    match v {
+        Value::Num(x) => Value::Num(x * k),
+        Value::List(items) => Value::List(items.into_iter().map(|i| scaled(i, k)).collect()),
+        other => other,
     }
 }
