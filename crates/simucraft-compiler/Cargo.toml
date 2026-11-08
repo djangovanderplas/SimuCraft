@@ -1,0 +1,20 @@
+[package]
+name = "simucraft-compiler"
+description = "SimuCraft compiler: model files to a compiled model."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+simucraft-contracts.workspace = true
+simucraft-format.workspace = true
+simucraft-expr.workspace = true
+toml_edit = { workspace = true, features = ["serde"] }
+
+[dev-dependencies]
+simucraft-blocks.workspace = true
+
+[lints]
+workspace = true
