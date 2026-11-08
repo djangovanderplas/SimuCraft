@@ -1,0 +1,69 @@
+format = "simucraft.model/0.1"
+id = "m_000000000003"
+name = "mass_spring_damper"
+doc = "x'' = -0.5 x' - 4 x, x(0) = 1. Same model as `mass_spring_damper` in conformance/matlab/export_references.m."
+
+[blocks.b_030000000001]
+name = "v_int"
+type = "core.Integrator"
+
+[blocks.b_030000000001.params]
+x0 = 0.0
+
+[blocks.b_030000000001.inputs]
+u = "b_030000000005.y"
+
+[blocks.b_030000000002]
+name = "x_int"
+type = "core.Integrator"
+
+[blocks.b_030000000002.params]
+x0 = 1.0
+
+[blocks.b_030000000002.inputs]
+u = "b_030000000001.y"
+
+[blocks.b_030000000003]
+name = "c"
+type = "core.Gain"
+
+[blocks.b_030000000003.params]
+k = -0.5
+
+[blocks.b_030000000003.inputs]
+u = "b_030000000001.y"
+
+[blocks.b_030000000004]
+name = "k"
+type = "core.Gain"
+
+[blocks.b_030000000004.params]
+k = -4.0
+
+[blocks.b_030000000004.inputs]
+u = "b_030000000002.y"
+
+[blocks.b_030000000005]
+name = "a"
+type = "core.Sum"
+
+[blocks.b_030000000005.params]
+signs = "++"
+
+[blocks.b_030000000005.inputs]
+u1 = "b_030000000003.y"
+u2 = "b_030000000004.y"
+
+[blocks.b_030000000006]
+name = "x"
+type = "core.Outport"
+
+[blocks.b_030000000006.inputs]
+u = "b_030000000002.y"
+
+[blocks.b_030000000007]
+name = "v"
+type = "core.Outport"
+
+[blocks.b_030000000007.inputs]
+u = "b_030000000001.y"

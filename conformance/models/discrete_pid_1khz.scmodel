@@ -1,0 +1,61 @@
+format = "simucraft.model/0.1"
+id = "m_000000000008"
+name = "discrete_pid_1khz"
+doc = "Discrete PI at 1 kHz (forward Euler) around a continuous plant. Same model as `discrete_pid_1khz` in conformance/matlab/export_references.m."
+
+[blocks.b_080000000001]
+name = "ref"
+type = "core.Step"
+
+[blocks.b_080000000001.params]
+time = 0.1
+initial = 0.0
+final = 1.0
+
+[blocks.b_080000000002]
+name = "err"
+type = "core.Sum"
+
+[blocks.b_080000000002.params]
+signs = "+-"
+
+[blocks.b_080000000002.inputs]
+u1 = "b_080000000001.y"
+u2 = "b_080000000004.y"
+
+[blocks.b_080000000003]
+name = "pi"
+type = "core.PID"
+ts = 0.001
+
+[blocks.b_080000000003.params]
+P = 2.0
+I = 5.0
+
+[blocks.b_080000000003.inputs]
+u = "b_080000000002.y"
+
+[blocks.b_080000000004]
+name = "plant"
+type = "core.TransferFcn"
+
+[blocks.b_080000000004.params]
+num = [2.0]
+den = [0.5, 1.0]
+
+[blocks.b_080000000004.inputs]
+u = "b_080000000003.y"
+
+[blocks.b_080000000005]
+name = "y"
+type = "core.Outport"
+
+[blocks.b_080000000005.inputs]
+u = "b_080000000004.y"
+
+[blocks.b_080000000006]
+name = "u"
+type = "core.Outport"
+
+[blocks.b_080000000006.inputs]
+u = "b_080000000003.y"

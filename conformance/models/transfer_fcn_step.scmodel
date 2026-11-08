@@ -1,0 +1,31 @@
+format = "simucraft.model/0.1"
+id = "m_000000000004"
+name = "transfer_fcn_step"
+doc = "Unit step into 4 / (s^2 + 0.5 s + 4). Same model as `transfer_fcn_step` in conformance/matlab/export_references.m."
+
+[blocks.b_040000000001]
+name = "step"
+type = "core.Step"
+
+[blocks.b_040000000001.params]
+time = 0.0
+initial = 0.0
+final = 1.0
+
+[blocks.b_040000000002]
+name = "tf"
+type = "core.TransferFcn"
+
+[blocks.b_040000000002.params]
+num = [4.0]
+den = [1.0, 0.5, 4.0]
+
+[blocks.b_040000000002.inputs]
+u = "b_040000000001.y"
+
+[blocks.b_040000000003]
+name = "y"
+type = "core.Outport"
+
+[blocks.b_040000000003.inputs]
+u = "b_040000000002.y"

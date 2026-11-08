@@ -1,0 +1,63 @@
+format = "simucraft.model/0.1"
+id = "m_000000000009"
+name = "multirate"
+doc = "1 kHz and 100 Hz parts with a rate transition (requirement M7). Same model as `multirate` in conformance/matlab/export_references.m."
+
+[blocks.b_090000000001]
+name = "sine"
+type = "core.Sine"
+
+[blocks.b_090000000001.params]
+amplitude = 1.0
+frequency = "2 * pi"
+
+[blocks.b_090000000002]
+name = "zoh_fast"
+type = "core.ZeroOrderHold"
+ts = 0.001
+
+[blocks.b_090000000002.inputs]
+u = "b_090000000001.y"
+
+[blocks.b_090000000003]
+name = "gain"
+type = "core.Gain"
+
+[blocks.b_090000000003.params]
+k = 2.0
+
+[blocks.b_090000000003.inputs]
+u = "b_090000000002.y"
+
+[blocks.b_090000000004]
+name = "rt"
+type = "core.RateTransition"
+ts = 0.01
+
+[blocks.b_090000000004.inputs]
+u = "b_090000000003.y"
+
+[blocks.b_090000000005]
+name = "delay"
+type = "core.UnitDelay"
+ts = 0.01
+
+[blocks.b_090000000005.params]
+x0 = 0.0
+
+[blocks.b_090000000005.inputs]
+u = "b_090000000004.y"
+
+[blocks.b_090000000006]
+name = "fast"
+type = "core.Outport"
+
+[blocks.b_090000000006.inputs]
+u = "b_090000000003.y"
+
+[blocks.b_090000000007]
+name = "slow"
+type = "core.Outport"
+
+[blocks.b_090000000007.inputs]
+u = "b_090000000005.y"
