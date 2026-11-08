@@ -1,4 +1,6 @@
 //! Tree-walking evaluator. Values are in coherent SI units: `2[ms]` is 0.002.
+//! A parameter value is in its declared unit (`value = 5`, `unit = "mm"` is
+//! 5 mm), so the caller converts it to SI when it loads it.
 
 use simucraft_contracts::Diagnostic;
 

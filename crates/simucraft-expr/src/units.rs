@@ -1,7 +1,8 @@
 //! Unit checking and inference (spec Section 9, "Units policy").
 //!
 //! `None` is an unspecified unit: it meets anything without a diagnostic, and
-//! it makes the result unspecified. A number without `[unit]` is dimensionless.
+//! it makes the result unspecified. A number without `[unit]` is unspecified
+//! (owner decision 2026-11-08), so `x + 1` is valid and `2 * x` is unspecified.
 
 use simucraft_contracts::Diagnostic;
 
@@ -16,7 +17,7 @@ pub fn check_units(e: &Expr, unit_of: &dyn Fn(&str) -> Option<Units>) -> Result<
     let go = |e: &Expr| check_units(e, unit_of);
     let rad = Unit::parse("rad").expect("rad is an atom");
     Ok(match &e.node {
-        Node::Num(_, unit) => Some(unit.as_ref().map_or(Unit::ONE, |u| u.1)),
+        Node::Num(_, unit) => unit.as_ref().map(|u| u.1),
         Node::Bool(_) | Node::Not(_) => Some(Unit::ONE),
         Node::Name(n) => match unit_of(n) {
             Some(u) => u,
