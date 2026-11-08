@@ -175,3 +175,75 @@ fn bad_edits_are_refused_with_diagnostics() {
     assert_eq!(removed["diff"].as_array().unwrap().len(), 2, "{removed:#}");
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+#[test]
+fn compile_simulate_and_read_a_signal() {
+    let dir = scratch("run");
+    let mut svc = Service::default();
+    ok(
+        &mut svc,
+        "project.create",
+        json!({"path": dir.to_str().unwrap(), "name": "pid"}),
+    );
+    add(&mut svc, "core.Constant", "one", json!({"value": 1.0}));
+    add(&mut svc, "core.Integrator", "int", json!({}));
+    add(&mut svc, "core.Outport", "x", json!({}));
+    ok(&mut svc, "connect", json!({"source": "one.y", "destination": "int.u"}));
+
+    // `x.u` has no source yet; unsaved edits are what the compiler sees.
+    let model = json!({"model": "models/pid.scmodel"});
+    let d = ok(&mut svc, "compile", model.clone());
+    assert!(
+        d["diagnostics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|d| d["severity"] == "error"),
+        "{d:#}"
+    );
+    assert!(call(&mut svc, "simulate", model.clone()).is_err());
+
+    ok(&mut svc, "connect", json!({"source": "int.y", "destination": "x.u"}));
+    assert_eq!(ok(&mut svc, "compile", model.clone()), json!({"diagnostics": []}));
+    let run = ok(
+        &mut svc,
+        "simulate",
+        json!({"model": "models/pid.scmodel", "stop_time": 2.0}),
+    );
+    assert_eq!((run["run"].as_str(), run["samples"].as_u64()), (Some("r1"), Some(1001)));
+    assert_eq!(run["signals"], json!(["x"]));
+
+    let get = |svc: &mut Service, mode: &str| ok(svc, "signal.get", json!({"run": "r1", "signal": "x", "mode": mode}));
+    let full = get(&mut svc, "full");
+    let last = full["values"].as_array().unwrap().last().unwrap().as_f64().unwrap();
+    assert!((last - 2.0).abs() < 1e-9, "x(2) = {last}");
+    let decimated = get(&mut svc, "decimated");
+    let points = decimated["t"].as_array().unwrap();
+    assert!(points.len() <= 1001 && points.last() == full["t"].as_array().unwrap().last());
+    let summary = get(&mut svc, "summary");
+    assert_eq!(
+        (summary["min"].as_f64(), summary["t_min"].as_f64()),
+        (Some(0.0), Some(0.0))
+    );
+    assert_eq!(summary["t_max"].as_f64(), Some(2.0));
+
+    let code = |e: Value| e["diagnostics"][0]["code"].as_str().unwrap().to_string();
+    let missing = call(
+        &mut svc,
+        "signal.get",
+        json!({"run": "r1", "signal": "nope", "mode": "full"}),
+    );
+    assert_eq!(code(missing.unwrap_err()), "A001");
+    let no_run = call(
+        &mut svc,
+        "signal.get",
+        json!({"run": "r9", "signal": "x", "mode": "full"}),
+    );
+    assert_eq!(code(no_run.unwrap_err()), "A001");
+    let overrides = call(
+        &mut svc,
+        "simulate",
+        json!({"model": "models/pid.scmodel", "overrides": {"k": 1.0}}),
+    );
+    assert_eq!(code(overrides.unwrap_err()), "A003");
+}
