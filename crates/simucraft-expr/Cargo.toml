@@ -1,0 +1,19 @@
+[package]
+name = "simucraft-expr"
+description = "SimuCraft expression language: parser, units, evaluator, bytecode and symbolic derivatives."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+simucraft-contracts.workspace = true
+
+[dev-dependencies]
+simucraft-format.workspace = true
+serde.workspace = true
+toml_edit = { workspace = true, features = ["serde"] }
+
+[lints]
+workspace = true
