@@ -211,11 +211,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "simucraft-blocks"
+version = "0.0.1"
+dependencies = [
+ "serde_json",
+ "simucraft-contracts",
+]
+
+[[package]]
+name = "simucraft-compiler"
+version = "0.0.1"
+dependencies = [
+ "simucraft-blocks",
+ "simucraft-contracts",
+ "simucraft-expr",
+ "simucraft-format",
+ "toml_edit",
+]
+
+[[package]]
 name = "simucraft-contracts"
 version = "0.0.1"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "simucraft-expr"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "simucraft-contracts",
+ "simucraft-format",
+ "toml_edit",
 ]
 
 [[package]]
