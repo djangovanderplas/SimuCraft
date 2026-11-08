@@ -3,6 +3,10 @@
 # repository is public. Usage: scripts/check.sh [--fix]
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# maturin installs into an active conda environment before VIRTUAL_ENV, so
+# always use the project's .venv.
+unset CONDA_PREFIX
+export VIRTUAL_ENV="$PWD/.venv"
 
 if [[ "${1:-}" == "--fix" ]]; then
   cargo fmt --all
