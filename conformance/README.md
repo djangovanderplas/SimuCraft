@@ -18,12 +18,15 @@ SimuCraft tests build the same models from the same code.
 
 ## Files per model
 
+`<name>` is the name of the builder function in the script, for example
+`ref_pid_plant.tight.csv`.
+
 | File | Content |
 | --- | --- |
-| `<name>.slx` | The Simulink model. Later also a test input for `.slx` import. |
-| `<name>.ode4.csv` | Fixed-step RK4 with step 1e-3. Compare with the SimuCraft RK4 solver. |
-| `<name>.tight.csv` | ode45 with RelTol 1e-10 and AbsTol 1e-12, output every 1e-3. A near-exact solution for any solver. |
-| `<name>.json` | Solver settings, block parameters and the MATLAB version. |
+| `ref_<name>.slx` | The Simulink model. Later also a test input for `.slx` import. |
+| `ref_<name>.ode4.csv` | Fixed-step RK4 with step 1e-3. Compare with the SimuCraft RK4 solver. |
+| `ref_<name>.tight.csv` | ode45 with RelTol 1e-10 and AbsTol 1e-12, output every 1e-3. A near-exact solution for any solver. |
+| `ref_<name>.json` | Solver settings, block parameters and the MATLAB version. |
 
 CSV files have a `time` column and one column for each outport, in port
 order. Values have 17 significant digits.

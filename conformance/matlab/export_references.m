@@ -3,11 +3,11 @@ function export_references(outdir)
 %
 %   export_references('../references') builds 9 small models from code,
 %   simulates each model two times and writes, for each model:
-%     <name>.slx          the model
-%     <name>.ode4.csv     fixed-step RK4, step 1e-3 (compare with our RK4)
-%     <name>.tight.csv    ode45, RelTol 1e-10, AbsTol 1e-12, output every 1e-3
-%                         (a near-exact solution for any solver)
-%     <name>.json         solver settings, block parameters, MATLAB version
+%     ref_<name>.slx          the model
+%     ref_<name>.ode4.csv     fixed-step RK4, step 1e-3 (compare with our RK4)
+%     ref_<name>.tight.csv    ode45, RelTol 1e-10, AbsTol 1e-12, output every
+%                             1e-3 (a near-exact solution for any solver)
+%     ref_<name>.json         solver settings, block parameters, MATLAB version
 %
 %   The script builds the models from code, so SimuCraft can build the same
 %   models. Do not edit the models by hand. A failed model does not stop the
@@ -34,7 +34,9 @@ runs = struct( ...
 
 failed = {};
 for i = 1:numel(models)
-    name = func2str(models{i});
+    % The prefix keeps the model name different from the builder function
+    % name: sim() finds a function before a model with the same name.
+    name = ['ref_' func2str(models{i})];
     try
         if bdIsLoaded(name)
             close_system(name, 0);
