@@ -1219,6 +1219,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "simucraft-mcp"
+version = "0.0.1"
+dependencies = [
+ "serde_json",
+ "simucraft-contracts",
+ "simucraft-format",
+ "simucraft-service",
+]
+
+[[package]]
 name = "simucraft-py"
 version = "0.0.1"
 dependencies = [
