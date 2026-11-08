@@ -175,3 +175,18 @@ fn bad_edits_are_refused_with_diagnostics() {
     assert_eq!(removed["diff"].as_array().unwrap().len(), 2, "{removed:#}");
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+#[test]
+fn model_get_includes_the_layout_twin() {
+    let demo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/motor_demo");
+    let mut svc = Service::default();
+    ok(&mut svc, "project.open", json!({"path": demo.to_str().unwrap()}));
+    let top = ok(&mut svc, "model.get", json!({"path": "models/speed_control.scmodel"}));
+    assert_eq!(top["layout"]["blocks"]["b_4a10f3k8m2qx"]["at"], json!([140, 80]));
+    let sub = ok(
+        &mut svc,
+        "model.get",
+        json!({"path": "models/subsystems/dc_motor.scmodel"}),
+    );
+    assert_eq!(sub["layout"], Value::Null);
+}

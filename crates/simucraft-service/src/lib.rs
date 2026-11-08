@@ -292,7 +292,7 @@ impl Service {
             Command::Redo {} => self.step(false),
             Command::ModelGet { path, depth: _ } => {
                 let file = model(&self.files, if path.is_empty() { &self.top } else { &path })?;
-                Ok(json!({"file": file, "model": data(&self.files[&file])}))
+                Ok(json!({"file": file, "model": data(&self.files[&file]), "layout": self.layout(&file)}))
             }
             Command::Find { query } => {
                 let q = query.to_lowercase();
@@ -369,6 +369,16 @@ impl Service {
             created,
             diagnostics: vec![]
         }))
+    }
+
+    /// The `.sclayout` twin of a model file, from disk. `null` if there is
+    /// none or it is not a valid layout file: a viewer then places all blocks itself.
+    fn layout(&self, file: &str) -> Json {
+        let root = self.root.as_ref().expect("a project is open");
+        std::fs::read_to_string(root.join(file).with_extension("sclayout"))
+            .ok()
+            .and_then(|text| File::parse(Kind::Layout, &text).ok())
+            .map_or(Json::Null, |f| data(&f))
     }
 
     fn step(&mut self, undo: bool) -> Result<Json, RpcError> {
