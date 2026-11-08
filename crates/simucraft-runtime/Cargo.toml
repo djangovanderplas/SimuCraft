@@ -1,0 +1,18 @@
+[package]
+name = "simucraft-runtime"
+description = "SimuCraft runtime: interprets a compiled model and runs solvers."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+simucraft-contracts.workspace = true
+diffsol = "0.18"
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true
