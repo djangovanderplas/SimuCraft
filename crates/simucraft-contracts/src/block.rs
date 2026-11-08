@@ -26,11 +26,55 @@ pub struct BlockSpec {
     pub params: Vec<ParamSpec>,
     #[serde(default)]
     pub inputs: Vec<PortSpec>,
+    /// More inputs after `inputs`, as many as a parameter sets, for example
+    /// one per sign of `core.Sum`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub variadic_inputs: Option<VariadicInputs>,
     #[serde(default)]
     pub outputs: Vec<PortSpec>,
     /// Physical (acausal) connectors.
     #[serde(default)]
     pub connectors: Vec<ConnectorSpec>,
+}
+
+/// Inputs whose number comes from a parameter. The ports are `<name>1`,
+/// `<name>2`, and so on, where `<name>` is `port.name`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct VariadicInputs {
+    /// The name prefix, doc, type, width and unit of each port.
+    pub port: PortSpec,
+    /// The parameter that sets the number of ports: a whole number, or the
+    /// length of a text or a vector.
+    pub count: String,
+}
+
+impl BlockSpec {
+    /// The input port names for these parameter values. If `params` has no
+    /// value for the count parameter, its default counts: a number, or else
+    /// the length of the default text.
+    pub fn input_names(&self, params: &Params) -> Result<Vec<String>, String> {
+        let mut names: Vec<String> = self.inputs.iter().map(|p| p.name.clone()).collect();
+        let Some(v) = &self.variadic_inputs else {
+            return Ok(names);
+        };
+        let n = match params.get(&v.count) {
+            Some(ParamValue::Text(t)) => t.chars().count(),
+            Some(ParamValue::Vector(x)) => x.len(),
+            Some(ParamValue::Scalar(x)) if *x >= 0.0 && x.fract() == 0.0 => *x as usize,
+            Some(_) => return Err(format!("`{}` must be a whole number, a text or a vector", v.count)),
+            None => {
+                let default = self
+                    .params
+                    .iter()
+                    .find(|p| p.name == v.count)
+                    .and_then(|p| p.default.clone());
+                let default = default.ok_or_else(|| format!("`{}` has no value and no default", v.count))?;
+                default.parse::<usize>().unwrap_or_else(|_| default.chars().count())
+            }
+        };
+        names.extend((1..=n).map(|i| format!("{}{i}", v.port.name)));
+        Ok(names)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -128,8 +172,12 @@ pub type Built = (Box<dyn Block>, Layout);
 pub trait BlockType: Send + Sync {
     fn spec(&self) -> &BlockSpec;
 
-    /// Make one instance. `input_widths` are resolved by the compiler.
-    fn build(&self, params: &Params, input_widths: &[usize]) -> Result<Built, Diagnostic>;
+    /// Make one instance. The compiler resolves `input_widths`, in
+    /// [`BlockSpec::input_names`] order, and `sample_time`: the block's `ts`
+    /// field if the model gives one, else the rate it inherits from its
+    /// sources. A block can declare another rate in its [`Layout`], but a
+    /// `ts` field in the model always wins.
+    fn build(&self, params: &Params, input_widths: &[usize], sample_time: SampleTime) -> Result<Built, Diagnostic>;
 }
 
 /// The runtime's view of one block for one step. Slices are this block's own

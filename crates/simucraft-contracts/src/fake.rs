@@ -11,7 +11,7 @@ use serde_json::{Value as Json, json};
 
 use crate::Diagnostic;
 use crate::api::{self, Change, ChangeOp, Command, EditResult, Outcome, Request, Response, RpcError};
-use crate::block::{Block, BlockSpec, BlockType, Built, Ctx, Layout, Params, PortSpec, SampleTime};
+use crate::block::{Block, BlockSpec, BlockType, Built, Ctx, Layout, Params, PortSpec, SampleTime, VariadicInputs};
 use crate::ir::{CompiledModel, ParamValue};
 
 // ---------------------------------------------------------------- blocks
@@ -38,6 +38,7 @@ fn spec(type_name: &str, inputs: &[&str], params: &[&str]) -> BlockSpec {
             })
             .collect(),
         inputs: inputs.iter().map(port).collect(),
+        variadic_inputs: None,
         outputs: [&"y"].into_iter().map(port).collect(),
         connectors: vec![],
     }
@@ -73,7 +74,7 @@ impl BlockType for Fake {
     fn spec(&self) -> &BlockSpec {
         &self.spec
     }
-    fn build(&self, params: &Params, input_widths: &[usize]) -> Result<Built, Diagnostic> {
+    fn build(&self, params: &Params, input_widths: &[usize], _: SampleTime) -> Result<Built, Diagnostic> {
         (self.build)(params, input_widths)
     }
 }
@@ -144,7 +145,19 @@ pub fn library() -> Vec<Box<dyn BlockType>> {
             },
         }),
         Box::new(Fake {
-            spec: spec("core.Sum", &["u1", "u2"], &["signs"]),
+            spec: BlockSpec {
+                variadic_inputs: Some(VariadicInputs {
+                    port: PortSpec {
+                        name: "u".into(),
+                        doc: String::new(),
+                        dtype: Default::default(),
+                        width: None,
+                        unit: None,
+                    },
+                    count: "signs".into(),
+                }),
+                ..spec("core.Sum", &[], &["signs"])
+            },
             build: |p, w| {
                 let Some(ParamValue::Text(signs)) = p.get("signs") else {
                     return Err(Diagnostic::error("C001", "`signs` must be a string such as \"+-\""));
@@ -192,7 +205,11 @@ pub fn run_euler(
                 Diagnostic::error("R001", format!("unknown block type `{}`", inst.type_name)).id(&inst.id)
             })?;
         let widths: Vec<usize> = inst.inputs.iter().map(|s| s.len).collect();
-        let (mut block, layout) = ty.build(&inst.params, &widths).map_err(|d| d.id(&inst.id))?;
+        let rate = *model
+            .rates
+            .get(inst.rate)
+            .ok_or_else(|| Diagnostic::error("R002", "rate index is out of range").id(&inst.id))?;
+        let (mut block, layout) = ty.build(&inst.params, &widths, rate).map_err(|d| d.id(&inst.id))?;
         let outputs: Vec<usize> = inst.outputs.iter().map(|s| s.len).collect();
         if layout.outputs != outputs || layout.continuous_states != inst.x.len || layout.discrete_states != inst.xd.len
         {
