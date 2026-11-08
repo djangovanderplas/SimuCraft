@@ -16,6 +16,7 @@ simucraft-compiler = { path = "crates/simucraft-compiler" }
 simucraft-format = { path = "crates/simucraft-format" }
 simucraft-expr = { path = "crates/simucraft-expr" }
 simucraft-runtime = { path = "crates/simucraft-runtime" }
+simucraft-service = { path = "crates/simucraft-service" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml_edit = "0.25"

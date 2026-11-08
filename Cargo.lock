@@ -1225,6 +1225,7 @@ dependencies = [
  "pyo3",
  "serde_json",
  "simucraft-format",
+ "simucraft-service",
 ]
 
 [[package]]
@@ -1234,6 +1235,16 @@ dependencies = [
  "diffsol",
  "serde_json",
  "simucraft-contracts",
+]
+
+[[package]]
+name = "simucraft-service"
+version = "0.0.1"
+dependencies = [
+ "serde_json",
+ "simucraft-contracts",
+ "simucraft-format",
+ "toml_edit",
 ]
 
 [[package]]
