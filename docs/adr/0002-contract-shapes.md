@@ -36,3 +36,24 @@ it gets its own pull request (see CLAUDE.md).
 8. **Diagnostic codes have a prefix for each area:** `F` files, `C`
    compiler, `R` runtime, `A` API. The format crate lists its codes in
    `simucraft_format::codes`.
+
+## Amendment 1 (2026-11-08, gate G1)
+
+Two gaps in the block contract came up in WP1.1 and WP1.3. Both made the
+compiler know about one block type by name.
+
+1. **A block spec can declare a variable number of inputs.**
+   `BlockSpec::variadic_inputs` names a port prefix and the parameter that sets
+   the count (a whole number, or the length of a text or a vector).
+   `BlockSpec::input_names` gives the port names, so the compiler, the service
+   and the editor agree. `core.Sum` uses it: one input `u1`, `u2`, and so on
+   for each sign. Before, the compiler had a special case for `core.Sum`.
+2. **`BlockType::build` gets the resolved sample time.** It is the block's
+   `ts` field, or else the rate that the block inherits from its sources. If
+   the compiler does not know the rate yet, it passes `Inherited` and builds
+   the block again later. Before, the compiler passed the `ts` field as a
+   parameter named `ts`, and an inherited block could not know its rate.
+   `core.PID` now takes its rate from this argument and has no `ts`
+   parameter.
+
+The new field has a serde default, so the JSON fixtures need no change.
