@@ -1,0 +1,44 @@
+:root {
+  --bg: #f7f7f5;
+  --panel: #ffffff;
+  --ink: #1d1d1f;
+  --muted: #6b6b70;
+  --line: #c9c9ce;
+  --accent: #2f6fd6;
+  --net: #b06a16;
+  --bad: #b3261e;
+  color-scheme: light dark;
+  font: 14px/1.4 system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b1d;
+    --panel: #262629;
+    --ink: #ececef;
+    --muted: #a0a0a8;
+    --line: #4a4a50;
+    --accent: #7aa7ff;
+    --net: #e0a050;
+    --bad: #ff8a80;
+  }
+}
+body { margin: 0; background: var(--bg); color: var(--ink); }
+.app { display: flex; flex-direction: column; height: 100vh; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+header form { display: flex; gap: 6px; align-items: center; flex: 1 1 360px; }
+header input { flex: 1; min-width: 0; padding: 4px 6px; font: inherit; }
+nav { display: flex; gap: 2px; }
+nav button:not(:last-child)::after { content: " ›"; color: var(--muted); }
+button, select { font: inherit; }
+main { flex: 1; min-height: 0; }
+.empty { padding: 24px; color: var(--muted); }
+.error { margin: 0; padding: 8px 12px; color: var(--bad); white-space: pre-wrap; }
+.problems { margin: 0; padding: 6px 28px; color: var(--bad); }
+.block { width: 150px; min-height: 56px; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.block.subsystem { border: 2px solid var(--accent); cursor: zoom-in; }
+.block .name { font-weight: 600; overflow-wrap: anywhere; }
+.block .type { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.note { color: var(--muted); font-style: italic; white-space: nowrap; }
+.react-flow { --xy-background-color: var(--bg); --xy-edge-stroke: var(--ink); }
+.react-flow__edge.net path { stroke: var(--net); stroke-dasharray: 4 3; }
+.react-flow__handle { width: 7px; height: 7px; background: var(--muted); }

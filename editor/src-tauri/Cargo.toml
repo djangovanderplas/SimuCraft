@@ -1,0 +1,17 @@
+[package]
+name = "simucraft-editor"
+description = "SimuCraft editor shell (Tauri). The UI is in ../src."
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85"
+license = "Apache-2.0"
+publish = false
+
+# Its own workspace: the root workspace and scripts/check.sh do not build Tauri.
+[workspace]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }

@@ -31,7 +31,7 @@ impl BlockType for Stub {
     fn spec(&self) -> &BlockSpec {
         &self.0
     }
-    fn build(&self, _: &Params, widths: &[usize]) -> Result<Built, Diagnostic> {
+    fn build(&self, _: &Params, widths: &[usize], _: SampleTime) -> Result<Built, Diagnostic> {
         let layout = Layout {
             inputs: widths.to_vec(),
             outputs: vec![1; self.0.outputs.len()],
@@ -73,6 +73,7 @@ fn stub(type_name: &str, inputs: &[&str], outputs: &[&str], params: &[&str]) -> 
             })
             .collect(),
         inputs: inputs.iter().map(port).collect(),
+        variadic_inputs: None,
         outputs: outputs.iter().map(port).collect(),
         connectors: vec![],
     }))
@@ -150,14 +151,7 @@ fn motor_demo_signal_flow_part_compiles() {
     assert!(speed_ref < error && sensor < error && error < pi);
 
     let (_, pi) = block(&m, "b_5c2d9tz6hyaw");
-    assert_eq!(
-        (
-            scalar(&pi.params["P"]),
-            scalar(&pi.params["I"]),
-            scalar(&pi.params["ts"])
-        ),
-        (0.8, 4.0, 0.001)
-    );
+    assert_eq!((scalar(&pi.params["P"]), scalar(&pi.params["I"])), (0.8, 4.0));
     assert_eq!(
         m.rates[pi.rate],
         SampleTime::Discrete {
@@ -314,4 +308,50 @@ u = "b_000000000002.y"
         m.blocks
     );
     assert_eq!(m.continuous_states, 2);
+}
+
+#[test]
+fn an_inherited_block_gets_the_rate_of_its_sources() {
+    // `late` comes before its sources in the file, so the compiler first
+    // builds it with an unknown rate and resolves the rate in a later round.
+    let text = r#"
+format = "simucraft.model/0.1"
+id = "m_000000000r01"
+name = "rates"
+
+[blocks.b_000000000004]
+name = "late"
+type = "core.PID"
+[blocks.b_000000000004.params]
+I = 1.0
+[blocks.b_000000000004.inputs]
+u = "b_000000000003.y"
+
+[blocks.b_000000000003]
+name = "gain"
+type = "core.Gain"
+[blocks.b_000000000003.inputs]
+u = "b_000000000002.y"
+
+[blocks.b_000000000002]
+name = "fast"
+type = "core.PID"
+ts = 0.01
+[blocks.b_000000000002.inputs]
+u = "b_000000000001.y"
+
+[blocks.b_000000000001]
+name = "ref"
+type = "core.Constant"
+"#;
+    let (m, _) = ok(Path::new("rates.scmodel"), &|_| Some(text.into()));
+    let hz100 = SampleTime::Discrete {
+        period: 0.01,
+        offset: 0.0,
+    };
+    let (_, late) = block(&m, "b_000000000004");
+    assert_eq!(m.rates[late.rate], hz100);
+    assert_eq!((late.x.len, late.xd.len), (0, 2), "a discrete PID has discrete states");
+    let (_, gain) = block(&m, "b_000000000003");
+    assert_eq!(m.rates[gain.rate], hz100);
 }

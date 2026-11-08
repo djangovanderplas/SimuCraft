@@ -92,11 +92,11 @@ impl Simulation {
                 })?;
             let widths: Vec<usize> = inst.inputs.iter().map(|s| s.len).collect();
             let outputs: Vec<usize> = inst.outputs.iter().map(|s| s.len).collect();
-            let (mut block, layout) = ty.build(&inst.params, &widths).map_err(|d| d.id(&inst.id))?;
-            let adjacent = inst.outputs.windows(2).all(|w| w[0].start + w[0].len == w[1].start);
             let rate = *model.rates.get(inst.rate).ok_or_else(|| {
                 Diagnostic::error(codes::LAYOUT, format!("rate index {} is out of range", inst.rate)).id(&inst.id)
             })?;
+            let (mut block, layout) = ty.build(&inst.params, &widths, rate).map_err(|d| d.id(&inst.id))?;
+            let adjacent = inst.outputs.windows(2).all(|w| w[0].start + w[0].len == w[1].start);
             if layout.outputs != outputs
                 || !adjacent
                 || layout.continuous_states != inst.x.len

@@ -3,13 +3,14 @@
 import itertools
 import json
 from contextlib import contextmanager
+from dataclasses import dataclass
 from os import PathLike
 
 from simucraft._native import Service as _Service
 from simucraft._native import __version__
 from simucraft._native import check_file as _check_file
 
-__all__ = ["Block", "CommandError", "Model", "Project", "__version__", "check", "create", "open"]
+__all__ = ["Block", "CommandError", "Model", "Project", "Run", "Signal", "__version__", "check", "create", "open"]
 
 
 def check(path: str | PathLike[str]) -> list[dict]:
@@ -134,6 +135,50 @@ class Model:
     def get(self) -> dict:
         """The model's data, as in the file."""
         return self._call("model.get", path=self.path)["model"]
+
+    def compile(self) -> list[dict]:
+        """Compile the model, with its unsaved edits. Returns the diagnostics; an empty list means clean."""
+        return self._call("compile", model=self.path)["diagnostics"]
+
+    def simulate(self, stop_time: float | None = None, signals: list[str] | None = None) -> "Run":
+        """Compile and run the model. The solver settings come from its `[simulation]` table.
+
+        `signals` names the outports and logged signals to record; the default is all of them.
+        """
+        result = self._call("simulate", model=self.path, stop_time=stop_time, signals=signals or [])
+        return Run(self.project, result["run"], result["signals"])
+
+
+@dataclass
+class Signal:
+    """One recorded signal. A signal of width `w` has `w` values per time, one row after the other."""
+
+    name: str
+    t: list[float]
+    values: list[float]
+    width: int
+
+
+class Run:
+    """A finished simulation run. Its traces stay in the model service."""
+
+    def __init__(self, project: Project, id: str, signals: list[str]):
+        self.project = project
+        self.id = id
+        self.signals = signals
+
+    def signal(self, name: str, decimated: bool = False) -> Signal:
+        """All samples of a signal, or at most 1000 of them if `decimated`."""
+        mode = "decimated" if decimated else "full"
+        r = self.project._client.call("signal.get", run=self.id, signal=name, mode=mode)
+        return Signal(name, r["t"], r["values"], r["width"])
+
+    def summary(self, name: str) -> dict:
+        """Statistics of a signal: min, max, mean and final value, with their times."""
+        return self.project._client.call("signal.get", run=self.id, signal=name, mode="summary")
+
+    def __repr__(self) -> str:
+        return f"Run({self.id!r}, signals={self.signals!r})"
 
 
 class Block:

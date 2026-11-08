@@ -19,7 +19,7 @@ use std::path::{Path, PathBuf};
 
 use simucraft_contracts::Diagnostic;
 use simucraft_contracts::block::{BlockType, Layout, Params, SampleTime};
-use simucraft_contracts::ir::{self, BlockInstance, CompiledModel, ParamValue, Slots};
+use simucraft_contracts::ir::{self, BlockInstance, CompiledModel, Slots};
 use simucraft_format::schema::{self, Model};
 
 mod params;
@@ -111,6 +111,8 @@ struct Flat {
     /// Source (flat index, output port index) per input port.
     sources: Vec<(usize, usize)>,
     layout: Option<Layout>,
+    /// The rate inherited from the sources; `None` until a source has a known rate.
+    inherited: Option<SampleTime>,
 }
 
 struct Compiler<'a> {
@@ -269,15 +271,15 @@ impl Compiler<'_> {
                 }
             }
         }
-        if let Some(ts) = b.ts
-            && spec.params.iter().any(|p| p.name == "ts")
-        {
-            params.insert("ts".into(), ParamValue::Scalar(ts));
-        }
-        // `core.Sum` has one input per sign.
-        let ports = match (spec.type_name.as_str(), params.get("signs")) {
-            ("core.Sum", Some(ParamValue::Text(signs))) => (1..=signs.len()).map(|i| format!("u{i}")).collect(),
-            _ => spec.inputs.iter().map(|p| p.name.clone()).collect(),
+        let ports = match spec.input_names(&params) {
+            Ok(ports) => ports,
+            Err(m) => {
+                let count = spec.variadic_inputs.as_ref().map(|v| v.count.as_str());
+                self.diagnostics
+                    .push(self.at(Diagnostic::error(codes::PARAM, m), inst, id, count));
+                ok = false;
+                Vec::new()
+            }
         };
         ok.then(|| {
             self.flats.push(Flat {
@@ -289,6 +291,7 @@ impl Compiler<'_> {
                 ports,
                 sources: Vec::new(),
                 layout: None,
+                inherited: None,
             });
             self.flats.len() - 1
         })
@@ -377,11 +380,13 @@ impl Compiler<'_> {
         }
     }
 
-    /// Build every block with the widths of its sources until nothing changes.
-    /// Width 1 stands in for a source that has no layout yet.
+    /// Build every block with the widths and the rate of its sources until
+    /// nothing changes. Width 1 stands in for a source that has no layout
+    /// yet; a rate that is not known yet is passed as `Inherited`.
     fn widths(&mut self) {
         let mut results: Vec<Result<Layout, Diagnostic>> = Vec::new();
-        for _ in 0..16 {
+        // A chain of n blocks in reverse file order needs n rounds.
+        for _ in 0..=self.flats.len().max(16) {
             let mut changed = false;
             results.clear();
             for f in 0..self.flats.len() {
@@ -390,11 +395,25 @@ impl Compiler<'_> {
                     .iter()
                     .map(|(s, o)| self.flats[*s].layout.as_ref().map_or(1, |l| l.outputs[*o]))
                     .collect();
+                let known: Vec<SampleTime> = self.flats[f]
+                    .sources
+                    .iter()
+                    .filter_map(|(s, _)| self.rate(*s))
+                    .collect();
+                let inherited =
+                    (!known.is_empty() || self.flats[f].sources.is_empty()).then(|| inherit(known.into_iter()));
+                if self.flats[f].inherited != inherited {
+                    self.flats[f].inherited = inherited;
+                    changed = true;
+                }
+                let rate = requested(self.flats[f].ts)
+                    .or(inherited)
+                    .unwrap_or(SampleTime::Inherited);
                 let built = self.library[self.flats[f].ty]
-                    .build(&self.flats[f].params, &widths)
+                    .build(&self.flats[f].params, &widths, rate)
                     .map(|(_, l)| l);
                 if let Ok(l) = &built
-                    && self.flats[f].layout.as_ref().is_none_or(|old| old.outputs != l.outputs)
+                    && self.flats[f].layout.as_ref() != Some(l)
                 {
                     self.flats[f].layout = Some(l.clone());
                     changed = true;
@@ -518,7 +537,6 @@ impl Compiler<'_> {
         };
         let mut outputs: Vec<Vec<Slots>> = vec![Vec::new(); self.flats.len()];
         let mut rates: Vec<SampleTime> = vec![SampleTime::Continuous; self.flats.len()];
-        let mut done = vec![false; self.flats.len()];
         for &f in order {
             let flat = &self.flats[f];
             let l = flat.layout.as_ref().expect("built");
@@ -538,31 +556,8 @@ impl Compiler<'_> {
         for &f in order {
             let flat = &self.flats[f];
             let l = flat.layout.as_ref().expect("built");
-            let rate = match flat.ts {
-                Some(ts) if ts > 0.0 => SampleTime::Discrete {
-                    period: ts,
-                    offset: 0.0,
-                },
-                Some(0.0) => SampleTime::Continuous,
-                _ => l.sample_time,
-            };
-            rates[f] = match rate {
-                SampleTime::Inherited => {
-                    let from = flat.sources.iter().map(|(s, _)| {
-                        let own = self.flats[*s].layout.as_ref().expect("built").sample_time;
-                        if done[*s] {
-                            rates[*s]
-                        } else if own == SampleTime::Inherited {
-                            SampleTime::Continuous
-                        } else {
-                            own
-                        }
-                    });
-                    inherit(from)
-                }
-                r => r,
-            };
-            done[f] = true;
+            // A loop of inherited blocks with no known rate runs continuous.
+            rates[f] = self.rate(f).unwrap_or(SampleTime::Continuous);
             let index = m.rates.iter().position(|r| *r == rates[f]).unwrap_or_else(|| {
                 m.rates.push(rates[f]);
                 m.rates.len() - 1
@@ -607,6 +602,31 @@ impl Compiler<'_> {
             }
         }
         m
+    }
+}
+
+impl Compiler<'_> {
+    /// The rate of a built block: its `ts` field, else the rate it declares,
+    /// else the rate it inherits. `None` if it is not known yet.
+    fn rate(&self, f: usize) -> Option<SampleTime> {
+        let flat = &self.flats[f];
+        requested(flat.ts).or(match flat.layout.as_ref()?.sample_time {
+            SampleTime::Inherited => flat.inherited,
+            r => Some(r),
+        })
+    }
+}
+
+/// The rate that a block's `ts` field asks for: discrete if it is above 0,
+/// continuous if it is 0. Omitted or negative means inherited.
+fn requested(ts: Option<f64>) -> Option<SampleTime> {
+    match ts {
+        Some(ts) if ts > 0.0 => Some(SampleTime::Discrete {
+            period: ts,
+            offset: 0.0,
+        }),
+        Some(0.0) => Some(SampleTime::Continuous),
+        _ => None,
     }
 }
 
