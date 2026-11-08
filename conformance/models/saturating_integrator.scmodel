@@ -1,0 +1,31 @@
+format = "simucraft.model/0.1"
+id = "m_000000000007"
+name = "saturating_integrator"
+doc = "x' = sin(t), x limited to [-0.5, 0.5] (requirement E3). Same model as `saturating_integrator` in conformance/matlab/export_references.m."
+
+[blocks.b_070000000001]
+name = "sine"
+type = "core.Sine"
+
+[blocks.b_070000000001.params]
+amplitude = 1.0
+frequency = 1.0
+
+[blocks.b_070000000002]
+name = "int"
+type = "core.Integrator"
+
+[blocks.b_070000000002.params]
+x0 = 0.0
+upper = 0.5
+lower = -0.5
+
+[blocks.b_070000000002.inputs]
+u = "b_070000000001.y"
+
+[blocks.b_070000000003]
+name = "x"
+type = "core.Outport"
+
+[blocks.b_070000000003.inputs]
+u = "b_070000000002.y"

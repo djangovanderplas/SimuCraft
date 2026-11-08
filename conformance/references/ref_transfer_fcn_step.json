@@ -1,0 +1,89 @@
+{
+  "model": "ref_transfer_fcn_step",
+  "stop_time": 10,
+  "matlab": "26.1.0.3346908 (R2026a) Update 5",
+  "simulink": "26.1",
+  "created": "2026-11-08T01:01:30",
+  "outputs": [
+    "y"
+  ],
+  "runs": [
+    {
+      "name": "ode4",
+      "settings": {
+        "SolverType": "Fixed-step",
+        "Solver": "ode4",
+        "FixedStep": "1e-3"
+      }
+    },
+    {
+      "name": "tight",
+      "settings": {
+        "SolverType": "Variable-step",
+        "Solver": "ode45",
+        "RelTol": "1e-10",
+        "AbsTol": "1e-12",
+        "MaxStep": "1e-2"
+      }
+    }
+  ],
+  "blocks": [
+    {
+      "name": "step",
+      "type": "Step",
+      "mask": "",
+      "params": {
+        "Time": "0",
+        "InitialValue": "0",
+        "FinalValue": "1",
+        "OutDataTypeStr": "double",
+        "SampleTime": "0",
+        "VectorParams1D": "on",
+        "ZeroCross": "on"
+      }
+    },
+    {
+      "name": "tf",
+      "type": "TransferFcn",
+      "mask": "",
+      "params": {
+        "Numerator": "[4]",
+        "Denominator": "[1 0.5 4]",
+        "ParameterTunability": "Auto",
+        "AbsoluteTolerance": "auto",
+        "ContinuousStateAttributes": "''"
+      }
+    },
+    {
+      "name": "y",
+      "type": "Outport",
+      "mask": "",
+      "params": {
+        "Port": "1",
+        "SignalName": "",
+        "StorageClass": "Auto",
+        "IconDisplay": "Port number",
+        "OutputFunctionCall": "off",
+        "OutMin": "[]",
+        "OutMax": "[]",
+        "OutDataTypeStr": "Inherit: auto",
+        "LockScale": "off",
+        "BusOutputAsStruct": "off",
+        "BusVirtuality": "inherit",
+        "DataMode": "inherit",
+        "Unit": "inherit",
+        "PortDimensions": "-1",
+        "VarSizeSig": "Inherit",
+        "SampleTime": "-1",
+        "SignalType": "auto",
+        "EnsureOutportIsVirtual": "off",
+        "OutputWhenDisabled": "held",
+        "InitialOutput": "[]",
+        "MustResolveToSignalObject": "off",
+        "OutputWhenUnConnected": "off",
+        "OutputWhenUnconnectedValue": "0",
+        "VectorParamsAs1DForOutWhenUnconnected": "on"
+      }
+    }
+  ]
+}

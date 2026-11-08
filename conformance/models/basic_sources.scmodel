@@ -1,0 +1,48 @@
+format = "simucraft.model/0.1"
+id = "m_000000000001"
+name = "basic_sources"
+doc = "Constant, Step, Sum and Gain: y = 0.5 * (2 - step(t >= 1, 0 -> 3)). Same model as `basic_sources` in conformance/matlab/export_references.m."
+
+[blocks.b_010000000001]
+name = "c"
+type = "core.Constant"
+
+[blocks.b_010000000001.params]
+value = 2.0
+
+[blocks.b_010000000002]
+name = "step"
+type = "core.Step"
+
+[blocks.b_010000000002.params]
+time = 1.0
+initial = 0.0
+final = 3.0
+
+[blocks.b_010000000003]
+name = "sum"
+type = "core.Sum"
+
+[blocks.b_010000000003.params]
+signs = "+-"
+
+[blocks.b_010000000003.inputs]
+u1 = "b_010000000001.y"
+u2 = "b_010000000002.y"
+
+[blocks.b_010000000004]
+name = "gain"
+type = "core.Gain"
+
+[blocks.b_010000000004.params]
+k = 0.5
+
+[blocks.b_010000000004.inputs]
+u = "b_010000000003.y"
+
+[blocks.b_010000000005]
+name = "y"
+type = "core.Outport"
+
+[blocks.b_010000000005.inputs]
+u = "b_010000000004.y"

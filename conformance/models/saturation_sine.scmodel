@@ -1,0 +1,37 @@
+format = "simucraft.model/0.1"
+id = "m_000000000006"
+name = "saturation_sine"
+doc = "A 0.5 Hz sine of amplitude 2 through a saturation at +-1. Same model as `saturation_sine` in conformance/matlab/export_references.m."
+
+[blocks.b_060000000001]
+name = "sine"
+type = "core.Sine"
+
+[blocks.b_060000000001.params]
+amplitude = 2.0
+frequency = "pi"
+
+[blocks.b_060000000002]
+name = "sat"
+type = "core.Saturation"
+
+[blocks.b_060000000002.params]
+upper = 1.0
+lower = -1.0
+
+[blocks.b_060000000002.inputs]
+u = "b_060000000001.y"
+
+[blocks.b_060000000003]
+name = "y"
+type = "core.Outport"
+
+[blocks.b_060000000003.inputs]
+u = "b_060000000002.y"
+
+[blocks.b_060000000004]
+name = "u"
+type = "core.Outport"
+
+[blocks.b_060000000004.inputs]
+u = "b_060000000001.y"

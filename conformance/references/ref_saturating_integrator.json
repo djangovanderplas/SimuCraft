@@ -1,0 +1,102 @@
+{
+  "model": "ref_saturating_integrator",
+  "stop_time": 10,
+  "matlab": "26.1.0.3346908 (R2026a) Update 5",
+  "simulink": "26.1",
+  "created": "2026-11-08T01:01:33",
+  "outputs": [
+    "x"
+  ],
+  "runs": [
+    {
+      "name": "ode4",
+      "settings": {
+        "SolverType": "Fixed-step",
+        "Solver": "ode4",
+        "FixedStep": "1e-3"
+      }
+    },
+    {
+      "name": "tight",
+      "settings": {
+        "SolverType": "Variable-step",
+        "Solver": "ode45",
+        "RelTol": "1e-10",
+        "AbsTol": "1e-12",
+        "MaxStep": "1e-2"
+      }
+    }
+  ],
+  "blocks": [
+    {
+      "name": "int",
+      "type": "Integrator",
+      "mask": "",
+      "params": {
+        "ExternalReset": "none",
+        "InitialConditionSource": "internal",
+        "InitialCondition": "0",
+        "LimitOutput": "on",
+        "UpperSaturationLimit": "0.5",
+        "LowerSaturationLimit": "-0.5",
+        "WrapState": "off",
+        "WrappedStateUpperValue": "pi",
+        "WrappedStateLowerValue": "-pi",
+        "ShowSaturationPort": "off",
+        "ShowStatePort": "off",
+        "AbsoluteTolerance": "auto",
+        "IgnoreLimit": "off",
+        "ZeroCross": "on",
+        "ContinuousStateAttributes": "''"
+      }
+    },
+    {
+      "name": "sine",
+      "type": "Sin",
+      "mask": "",
+      "params": {
+        "SineType": "Time based",
+        "TimeSource": "Use simulation time",
+        "Amplitude": "1",
+        "Bias": "0",
+        "Frequency": "1",
+        "Phase": "0",
+        "Samples": "10",
+        "Offset": "0",
+        "SampleTime": "0",
+        "VectorParams1D": "on"
+      }
+    },
+    {
+      "name": "x",
+      "type": "Outport",
+      "mask": "",
+      "params": {
+        "Port": "1",
+        "SignalName": "",
+        "StorageClass": "Auto",
+        "IconDisplay": "Port number",
+        "OutputFunctionCall": "off",
+        "OutMin": "[]",
+        "OutMax": "[]",
+        "OutDataTypeStr": "Inherit: auto",
+        "LockScale": "off",
+        "BusOutputAsStruct": "off",
+        "BusVirtuality": "inherit",
+        "DataMode": "inherit",
+        "Unit": "inherit",
+        "PortDimensions": "-1",
+        "VarSizeSig": "Inherit",
+        "SampleTime": "-1",
+        "SignalType": "auto",
+        "EnsureOutportIsVirtual": "off",
+        "OutputWhenDisabled": "held",
+        "InitialOutput": "[]",
+        "MustResolveToSignalObject": "off",
+        "OutputWhenUnConnected": "off",
+        "OutputWhenUnconnectedValue": "0",
+        "VectorParamsAs1DForOutWhenUnconnected": "on"
+      }
+    }
+  ]
+}

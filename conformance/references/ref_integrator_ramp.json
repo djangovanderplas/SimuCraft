@@ -1,0 +1,99 @@
+{
+  "model": "ref_integrator_ramp",
+  "stop_time": 5,
+  "matlab": "26.1.0.3346908 (R2026a) Update 5",
+  "simulink": "26.1",
+  "created": "2026-11-08T01:01:29",
+  "outputs": [
+    "x"
+  ],
+  "runs": [
+    {
+      "name": "ode4",
+      "settings": {
+        "SolverType": "Fixed-step",
+        "Solver": "ode4",
+        "FixedStep": "1e-3"
+      }
+    },
+    {
+      "name": "tight",
+      "settings": {
+        "SolverType": "Variable-step",
+        "Solver": "ode45",
+        "RelTol": "1e-10",
+        "AbsTol": "1e-12",
+        "MaxStep": "1e-2"
+      }
+    }
+  ],
+  "blocks": [
+    {
+      "name": "c",
+      "type": "Constant",
+      "mask": "",
+      "params": {
+        "Value": "1",
+        "VectorParams1D": "on",
+        "OutMin": "[]",
+        "OutMax": "[]",
+        "OutDataTypeStr": "Inherit: Inherit from 'Constant value'",
+        "LockScale": "off",
+        "SampleTime": "inf"
+      }
+    },
+    {
+      "name": "int",
+      "type": "Integrator",
+      "mask": "",
+      "params": {
+        "ExternalReset": "none",
+        "InitialConditionSource": "internal",
+        "InitialCondition": "0.5",
+        "LimitOutput": "off",
+        "UpperSaturationLimit": "inf",
+        "LowerSaturationLimit": "-inf",
+        "WrapState": "off",
+        "WrappedStateUpperValue": "pi",
+        "WrappedStateLowerValue": "-pi",
+        "ShowSaturationPort": "off",
+        "ShowStatePort": "off",
+        "AbsoluteTolerance": "auto",
+        "IgnoreLimit": "off",
+        "ZeroCross": "on",
+        "ContinuousStateAttributes": "''"
+      }
+    },
+    {
+      "name": "x",
+      "type": "Outport",
+      "mask": "",
+      "params": {
+        "Port": "1",
+        "SignalName": "",
+        "StorageClass": "Auto",
+        "IconDisplay": "Port number",
+        "OutputFunctionCall": "off",
+        "OutMin": "[]",
+        "OutMax": "[]",
+        "OutDataTypeStr": "Inherit: auto",
+        "LockScale": "off",
+        "BusOutputAsStruct": "off",
+        "BusVirtuality": "inherit",
+        "DataMode": "inherit",
+        "Unit": "inherit",
+        "PortDimensions": "-1",
+        "VarSizeSig": "Inherit",
+        "SampleTime": "-1",
+        "SignalType": "auto",
+        "EnsureOutportIsVirtual": "off",
+        "OutputWhenDisabled": "held",
+        "InitialOutput": "[]",
+        "MustResolveToSignalObject": "off",
+        "OutputWhenUnConnected": "off",
+        "OutputWhenUnconnectedValue": "0",
+        "VectorParamsAs1DForOutWhenUnconnected": "on"
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+format = "simucraft.model/0.1"
+id = "m_000000000002"
+name = "integrator_ramp"
+doc = "x' = 1, x(0) = 0.5. Same model as `integrator_ramp` in conformance/matlab/export_references.m."
+
+[blocks.b_020000000001]
+name = "c"
+type = "core.Constant"
+
+[blocks.b_020000000001.params]
+value = 1.0
+
+[blocks.b_020000000002]
+name = "int"
+type = "core.Integrator"
+
+[blocks.b_020000000002.params]
+x0 = 0.5
+
+[blocks.b_020000000002.inputs]
+u = "b_020000000001.y"
+
+[blocks.b_020000000003]
+name = "x"
+type = "core.Outport"
+
+[blocks.b_020000000003.inputs]
+u = "b_020000000002.y"

@@ -1,0 +1,70 @@
+format = "simucraft.model/0.1"
+id = "m_00000000000p"
+name = "pid_loop"
+doc = "PI control of a first-order plant, all signal flow"
+
+[parameters.Kp]
+value = 2.0
+
+[parameters.Ki]
+expr = "Kp * 1.5"
+
+[parameters.tau]
+value = 500.0
+unit = "ms"
+
+[blocks.b_000000000001]
+name = "ref"
+type = "core.Constant"
+
+[blocks.b_000000000001.params]
+value = 1.0
+
+[blocks.b_000000000002]
+name = "error"
+type = "core.Sum"
+
+[blocks.b_000000000002.params]
+signs = "+-"
+
+[blocks.b_000000000002.inputs]
+u1 = "b_000000000001.y"
+u2 = "b_000000000004.y"
+
+[blocks.b_000000000003]
+name = "pid"
+type = "core.PID"
+
+[blocks.b_000000000003.params]
+P = "Kp"
+I = "Ki"
+D = 0.0
+
+[blocks.b_000000000003.inputs]
+u = "b_000000000002.y"
+
+[blocks.b_000000000004]
+name = "plant"
+type = "core.TransferFcn"
+
+[blocks.b_000000000004.params]
+num = [1.0]
+den = "[tau / 1[s], 1]"
+
+[blocks.b_000000000004.inputs]
+u = "b_000000000003.y"
+
+[blocks.b_000000000005]
+name = "y"
+type = "core.Outport"
+
+[blocks.b_000000000005.inputs]
+u = "b_000000000004.y"
+
+[signals."b_000000000002.y"]
+name = "e"
+log = true
+
+[signals."b_000000000004.y"]
+name = "plant_out"
+log = true
